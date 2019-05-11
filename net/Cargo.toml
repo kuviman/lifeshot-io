@@ -1,14 +1,12 @@
 [package]
-name = "lish"
+name = "net"
 version = "0.1.0"
 authors = ["kuviman <kuviman@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ctrlc = "*"
 geng = { git = "https://gitlab.com/kuviman/geng" }
-serde = "*"
-net = { path = "net" }
-structopt = "*"
+ws = "*"
+url = "*"
 log = "*"
-env_logger = "*"
+bincode = "*"
