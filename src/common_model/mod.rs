@@ -6,6 +6,7 @@ pub mod prelude {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entity {
+    pub id: Id,
     pub pos: Vec2<f32>,
     pub vel: Vec2<f32>,
     pub size: f32,
@@ -70,7 +71,6 @@ impl Id {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Player {
-    pub id: Id,
     pub entity: Entity,
     pub projectile: Option<Projectile>,
     pub action: Action,
@@ -96,9 +96,9 @@ impl Player {
     const PROJECTILE_COST_SPEED: f32 = 0.1;
     pub fn new() -> Self {
         Self {
-            id: Id::new(),
             projectile: None,
             entity: Entity {
+                id: Id::new(),
                 pos: vec2(0.0, 0.0),
                 vel: vec2(0.0, 0.0),
                 size: 1.0,
@@ -116,6 +116,7 @@ impl Player {
                 self.projectile = Some(Projectile {
                     owner_id: self.id,
                     entity: Entity {
+                        id: Id::new(),
                         pos: self.entity.pos,
                         vel: vec2(0.0, 0.0),
                         size: 0.0,

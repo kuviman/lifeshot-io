@@ -1,6 +1,7 @@
 use crate::*;
 
 pub struct Entity {
+    pub id: Id,
     pub pos: Vec2<f32>,
     pub next_pos: Vec2<f32>,
     pub vel: Vec2<f32>,
@@ -13,6 +14,7 @@ impl Entity {
     const DELAY: f32 = 0.1;
     pub fn new(e: common_model::Entity) -> Self {
         Self {
+            id: e.id,
             pos: e.pos,
             next_pos: e.pos,
             vel: e.vel,
@@ -69,7 +71,6 @@ impl Projectile {
 
 pub struct Player {
     pub entity: Entity,
-    pub id: Id,
     pub projectile: Option<Projectile>,
 }
 
@@ -89,7 +90,6 @@ impl DerefMut for Player {
 impl Player {
     fn new(p: common_model::Player) -> Self {
         Self {
-            id: p.id,
             entity: Entity::new(p.entity),
             projectile: p.projectile.map(|p| Projectile::new(p)),
         }
