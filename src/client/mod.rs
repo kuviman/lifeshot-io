@@ -4,6 +4,7 @@ pub struct ClientApp {
     context: Rc<geng::Context>,
     action: Arc<Mutex<Action>>,
     model: Arc<Mutex<Option<Model>>>,
+    mouse_pos: Vec2<f32>,
     connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
     connection_promise: Box<Promise<Output = net::client::Connection<ClientMessage>>>,
 }
@@ -45,6 +46,7 @@ impl ClientApp {
             action,
             model,
             connection,
+            mouse_pos: vec2(0.0, 0.0),
             connection_promise: Box::new(connection_promise),
         }
     }
@@ -82,7 +84,7 @@ impl geng::App for ClientApp {
                 .window()
                 .is_button_pressed(geng::MouseButton::Left)
             {
-                action.shoot = Some(vec2(0.0, 0.0));
+                action.shoot = Some(self.mouse_pos);
             } else {
                 action.shoot = None;
             }
@@ -93,6 +95,21 @@ impl geng::App for ClientApp {
         let framebuffer_size = framebuffer.get_size().map(|x| x as f32);
         let center = framebuffer_size / 2.0;
         let scale = framebuffer_size.y / Self::CAMERA_FOV;
+
+        let view_matrix = Mat4::scale(vec3(framebuffer_size.y / framebuffer_size.x, 1.0, 1.0))
+            * Mat4::scale_uniform(1.0 / Self::CAMERA_FOV);
+        // * Mat4::translate(-self.camera_pos.extend(0.0));
+        self.mouse_pos = {
+            let mouse_pos = self.context.window().mouse_pos().map(|x| x as f32);
+            let mouse_pos = vec2(
+                mouse_pos.x / framebuffer_size.x * 2.0 - 1.0,
+                mouse_pos.y / framebuffer_size.y * 2.0 - 1.0,
+            );
+            let mouse_pos = view_matrix.inverse() * vec4(mouse_pos.x, mouse_pos.y, 0.0, 1.0);
+            let mouse_pos = vec2(mouse_pos.x, mouse_pos.y);
+            mouse_pos
+        };
+
         if let Some(model) = self.model.lock().unwrap().as_ref() {
             for player in model.players.values() {
                 self.context.draw_2d().ellipse(
