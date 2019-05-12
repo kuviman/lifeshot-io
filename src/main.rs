@@ -5,10 +5,12 @@ use log::{debug, error, info, trace, warn};
 
 mod client;
 mod model;
+#[cfg(not(target_arch = "wasm32"))]
 mod server;
 
 use client::*;
 use model::*;
+#[cfg(not(target_arch = "wasm32"))]
 use server::*;
 
 #[derive(structopt::StructOpt, Debug, Clone)]
@@ -36,10 +38,15 @@ struct Opts {
 }
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
     env_logger::init_from_env(env_logger::Env::new().filter_or("LISH_LOG", "lish,net"));
     trace!("Initializing");
     let opts: Opts = structopt::StructOpt::from_args();
     trace!("Options used:\n{:#?}", opts);
+
+    #[cfg(target_arch = "wasm32")]
+    let server = None::<()>;
+    #[cfg(not(target_arch = "wasm32"))]
     let (server, server_handle) = if opts.command.is_some() {
         let server = net::Server::new(
             Server::new(),
@@ -61,6 +68,8 @@ fn main() {
         Some(Command::ServerOnly) => false,
         _ => true,
     };
+
+    #[cfg(not(target_arch = "wasm32"))]
     let server_thread = if let Some(server) = server {
         if client {
             Some(std::thread::spawn(move || server.run()))
@@ -71,6 +80,7 @@ fn main() {
     } else {
         None
     };
+
     if client {
         let context = Rc::new(geng::Context::new(geng::ContextOptions {
             title: "Lish".to_owned(),
@@ -79,10 +89,14 @@ fn main() {
         let app = ClientApp::new(&context, opts.net_opts.clone());
         geng::run(context, app);
     }
-    if let Some(server_thread) = server_thread {
-        if client {
-            server_handle.unwrap().shutdown();
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        if let Some(server_thread) = server_thread {
+            if client {
+                server_handle.unwrap().shutdown();
+            }
+            server_thread.join().unwrap();
         }
-        server_thread.join().unwrap();
     }
 }
