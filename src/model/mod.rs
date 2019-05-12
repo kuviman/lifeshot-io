@@ -21,6 +21,22 @@ impl Entity {
         let mass = self.mass() + delta_mass;
         self.size = mass.max(0.0).sqrt();
     }
+    pub fn hit(&mut self, target: &mut Self, k: f32) -> bool {
+        let penetration = (self.size + target.size) - (self.pos - target.pos).len();
+        let penetration = penetration.min(min(self.size, target.size));
+        if penetration > 0.0 {
+            let prev_mass = self.mass();
+            self.size = (self.size - penetration).max(0.0);
+            let delta_mass = prev_mass - self.mass();
+            let prev_target_mass = target.mass();
+            target.add_mass(-delta_mass * k);
+            let real_delta_mass = (prev_target_mass - target.mass()) / k;
+            self.add_mass(delta_mass - real_delta_mass);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -138,6 +154,7 @@ impl DerefMut for Projectile {
 impl Projectile {
     const SPEED: f32 = 25.0;
     const DEATH_SPEED: f32 = 0.1;
+    const STRENGTH: f32 = 0.5;
     fn update(&mut self, delta_time: f32) {
         self.size -= Self::DEATH_SPEED * delta_time;
         self.entity.update(delta_time);
@@ -159,6 +176,13 @@ impl Model {
         }
         for projectile in &mut self.projectiles {
             projectile.update(delta_time);
+        }
+        for projectile in &mut self.projectiles {
+            for player in self.players.values_mut() {
+                if projectile.owner_id != player.id {
+                    projectile.hit(player, Projectile::STRENGTH);
+                }
+            }
         }
         self.players.retain(|_, e| e.alive());
         self.projectiles.retain(|e| e.alive());
