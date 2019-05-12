@@ -92,15 +92,11 @@ impl geng::App for ClientApp {
             if self.context.window().is_key_pressed(geng::Key::D) {
                 action.target_vel.x += 1.0;
             }
-            if self
+            action.shoot = self
                 .context
                 .window()
-                .is_button_pressed(geng::MouseButton::Left)
-            {
-                action.shoot = Some(self.mouse_pos);
-            } else {
-                action.shoot = None;
-            }
+                .is_button_pressed(geng::MouseButton::Left);
+            action.aim = self.mouse_pos;
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {

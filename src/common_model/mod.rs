@@ -47,14 +47,16 @@ impl Entity {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Action {
     pub target_vel: Vec2<f32>,
-    pub shoot: Option<Vec2<f32>>,
+    pub shoot: bool,
+    pub aim: Vec2<f32>,
 }
 
 impl Default for Action {
     fn default() -> Self {
         Self {
             target_vel: vec2(0.0, 0.0),
-            shoot: None,
+            shoot: false,
+            aim: vec2(0.0, 0.0),
         }
     }
 }
@@ -111,7 +113,7 @@ impl Player {
             .clamp(Self::ACCELERATION * delta_time);
         self.entity.update(delta_time);
 
-        if let Some(target) = self.action.shoot {
+        if self.action.shoot {
             if self.projectile.is_none() {
                 self.projectile = Some(Projectile {
                     owner_id: self.id,
@@ -126,10 +128,20 @@ impl Player {
             let projectile = self.projectile.as_mut().unwrap();
             let me = &mut self.entity;
 
-            projectile.pos = me.pos + (target - me.pos).clamp(me.size);
-            projectile.vel = (target - me.pos).normalize() * Projectile::SPEED;
             projectile.add_mass(Self::PROJECTILE_MASS_GAIN_SPEED * delta_time);
             me.add_mass(-Self::PROJECTILE_COST_SPEED * delta_time);
+        }
+
+        if let Some(ref mut projectile) = self.projectile {
+            let mut dr = self.action.aim - self.entity.pos;
+            if dr.len() > self.entity.size {
+                dr = dr.normalize();
+            }
+            projectile.pos = self.entity.pos + dr * self.entity.size;
+            projectile.vel = dr * Projectile::SPEED;
+        }
+
+        if self.action.shoot {
             None
         } else {
             self.projectile.take()
