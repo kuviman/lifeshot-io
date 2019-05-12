@@ -119,12 +119,12 @@ impl Player {
                 });
             }
             let projectile = self.projectile.as_mut().unwrap();
-            let e = &mut self.entity;
+            let me = &mut self.entity;
 
-            projectile.pos = e.pos + (target - e.pos).clamp(e.size);
-            projectile.vel = (target - e.pos).normalize() * Projectile::SPEED;
+            projectile.pos = me.pos + (target - me.pos).clamp(me.size);
+            projectile.vel = (target - me.pos).normalize() * Projectile::SPEED;
             projectile.add_mass(Self::PROJECTILE_MASS_GAIN_SPEED * delta_time);
-            e.add_mass(-Self::PROJECTILE_COST_SPEED * delta_time);
+            me.add_mass(-Self::PROJECTILE_COST_SPEED * delta_time);
             None
         } else {
             self.projectile.take()
