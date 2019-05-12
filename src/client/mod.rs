@@ -106,7 +106,7 @@ impl geng::App for ClientApp {
         let scale = framebuffer_size.y / Self::CAMERA_FOV;
 
         let view_matrix = Mat4::scale(vec3(framebuffer_size.y / framebuffer_size.x, 1.0, 1.0))
-            * Mat4::scale_uniform(1.0 / Self::CAMERA_FOV);
+            * Mat4::scale_uniform(2.0 / Self::CAMERA_FOV);
         // * Mat4::translate(-self.camera_pos.extend(0.0));
         self.mouse_pos = {
             let mouse_pos = self.context.window().mouse_pos().map(|x| x as f32);
