@@ -41,7 +41,7 @@ impl Entity {
 }
 
 pub struct Projectile {
-    owner_id: PlayerId,
+    owner_id: Id,
     entity: Entity,
 }
 
@@ -69,7 +69,7 @@ impl Projectile {
 
 pub struct Player {
     pub entity: Entity,
-    pub id: PlayerId,
+    pub id: Id,
     pub projectile: Option<Projectile>,
 }
 
@@ -101,7 +101,7 @@ impl Player {
 }
 
 pub struct Model {
-    pub players: HashMap<PlayerId, Player>,
+    pub players: HashMap<Id, Player>,
     pub projectiles: Vec<Projectile>,
 }
 
@@ -121,7 +121,7 @@ impl Model {
         }
     }
     pub fn recv(&mut self, mut message: ServerMessage) {
-        let mut dead_players: HashSet<PlayerId> = self.players.keys().cloned().collect();
+        let mut dead_players: HashSet<Id> = self.players.keys().cloned().collect();
         for player in self.players.values_mut() {
             if let Some(upd) = message.model.players.remove(&player.id) {
                 dead_players.remove(&player.id);

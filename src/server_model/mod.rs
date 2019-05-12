@@ -1,9 +1,5 @@
 use crate::*;
 
-pub mod prelude {
-    pub use super::{Action, ClientMessage, Id, ServerMessage};
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entity {
     pub pos: Vec2<f32>,
@@ -71,7 +67,7 @@ impl Id {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Player {
     pub id: Id,
-    pub entity: Entity,
+    entity: Entity,
     pub projectile: Option<Projectile>,
     pub action: Action,
 }
@@ -138,8 +134,8 @@ impl Player {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Projectile {
-    pub entity: Entity,
-    pub owner_id: Id,
+    entity: Entity,
+    owner_id: Id,
 }
 
 impl Deref for Projectile {
@@ -172,12 +168,6 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new_player(&mut self) -> Id {
-        let player = Player::new();
-        let player_id = player.id;
-        self.players.insert(player_id, player);
-        player_id
-    }
     pub fn update(&mut self, delta_time: f32) {
         for player in self.players.values_mut() {
             if let Some(projectile) = player.update(delta_time) {

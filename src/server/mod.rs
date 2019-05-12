@@ -5,7 +5,7 @@ mod model;
 use model::*;
 
 pub struct Client {
-    player_id: PlayerId,
+    player_id: Id,
     model: Arc<Mutex<Model>>,
     sender: Box<net::Sender<ServerMessage>>,
 }
