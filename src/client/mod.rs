@@ -9,6 +9,8 @@ pub struct ClientApp {
 }
 
 impl ClientApp {
+    const CAMERA_FOV: f32 = 30.0;
+
     pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
         struct Receiver {
             model: Arc<Mutex<Option<Model>>>,
@@ -81,7 +83,7 @@ impl geng::App for ClientApp {
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         let framebuffer_size = framebuffer.get_size().map(|x| x as f32);
         let center = framebuffer_size / 2.0;
-        let scale = framebuffer_size.y / 10.0;
+        let scale = framebuffer_size.y / Self::CAMERA_FOV;
         if let Some(model) = self.model.lock().unwrap().as_ref() {
             for player in model.players.values() {
                 self.context.draw_2d().ellipse(
