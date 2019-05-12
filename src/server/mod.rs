@@ -38,7 +38,7 @@ impl net::server::App for Server {
     type Client = Client;
     type ServerMessage = ServerMessage;
     type ClientMessage = ClientMessage;
-    const TICKS_PER_SECOND: f64 = 20.0;
+    const TICKS_PER_SECOND: f64 = 60.0;
     fn connect(&mut self, mut sender: Box<net::Sender<ServerMessage>>) -> Client {
         let player = Player::new();
         let player_id = player.id;
