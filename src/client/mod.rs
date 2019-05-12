@@ -77,6 +77,15 @@ impl geng::App for ClientApp {
             if self.context.window().is_key_pressed(geng::Key::D) {
                 action.target_vel.x += 1.0;
             }
+            if self
+                .context
+                .window()
+                .is_button_pressed(geng::MouseButton::Left)
+            {
+                action.shoot = Some(vec2(0.0, 0.0));
+            } else {
+                action.shoot = None;
+            }
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
@@ -90,6 +99,22 @@ impl geng::App for ClientApp {
                     framebuffer,
                     player.pos * scale + center,
                     vec2(1.0, 1.0) * scale * player.size,
+                    Color::WHITE,
+                );
+                if let Some(ref projectile) = player.projectile {
+                    self.context.draw_2d().ellipse(
+                        framebuffer,
+                        projectile.pos * scale + center,
+                        vec2(1.0, 1.0) * scale * projectile.size,
+                        Color::WHITE,
+                    );
+                }
+            }
+            for projectile in &model.projectiles {
+                self.context.draw_2d().ellipse(
+                    framebuffer,
+                    projectile.pos * scale + center,
+                    vec2(1.0, 1.0) * scale * projectile.size,
                     Color::WHITE,
                 );
             }

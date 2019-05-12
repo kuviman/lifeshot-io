@@ -45,7 +45,7 @@ impl net::server::App for Server {
     const TICKS_PER_SECOND: f64 = 20.0;
     fn connect(&mut self, mut sender: Box<net::Sender<ServerMessage>>) -> Client {
         let player = Player::new();
-        let player_id = PlayerId::new();
+        let player_id = player.id;
         {
             let mut model = self.model.lock().unwrap();
             model.players.insert(player_id, player);
