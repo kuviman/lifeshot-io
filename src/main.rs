@@ -15,7 +15,7 @@ use server::*;
 
 #[derive(structopt::StructOpt, Debug, Clone)]
 pub struct NetOpts {
-    #[structopt(long = "host", default_value = "127.0.0.1")]
+    #[structopt(long = "host", default_value = "server.lifeshot.io")]
     host: String,
     #[structopt(long = "port", default_value = "1154")]
     port: u16,
@@ -41,6 +41,10 @@ fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     env_logger::init_from_env(env_logger::Env::new().filter_or("LISH_LOG", "lish,net"));
     trace!("Initializing");
+
+    #[cfg(target_arch = "wasm32")]
+    let opts: Opts = structopt::StructOpt::from_iter(std::iter::empty::<String>());
+    #[cfg(not(target_arch = "wasm32"))]
     let opts: Opts = structopt::StructOpt::from_args();
     trace!("Options used:\n{:#?}", opts);
 

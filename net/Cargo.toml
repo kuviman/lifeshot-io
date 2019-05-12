@@ -10,5 +10,8 @@ url = "*"
 log = "*"
 serde_json = "*"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+stdweb = "*"
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ws = "*"

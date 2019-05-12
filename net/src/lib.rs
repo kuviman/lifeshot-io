@@ -1,3 +1,7 @@
+#[cfg(target_arch = "wasm32")]
+#[macro_use]
+extern crate stdweb;
+
 use geng::prelude::*;
 use log::{debug, error, info, trace, warn};
 
