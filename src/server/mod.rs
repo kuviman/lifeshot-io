@@ -15,11 +15,7 @@ impl Drop for Client {
 impl net::Receiver<ClientMessage> for Client {
     fn handle(&mut self, message: ClientMessage) {
         let mut model = self.model.lock().unwrap();
-        model
-            .players
-            .get_mut(&self.player_id)
-            .expect("Player not found")
-            .action = message.action;
+        model.handle(self.player_id, message);
         self.sender.send(ServerMessage {
             model: model.clone(),
         });

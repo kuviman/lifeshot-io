@@ -163,6 +163,11 @@ impl Model {
         self.players.retain(|_, e| e.alive());
         self.projectiles.retain(|e| e.alive());
     }
+    pub fn handle(&mut self, player_id: PlayerId, message: ClientMessage) {
+        if let Some(player) = self.players.get_mut(&player_id) {
+            player.action = message.action;
+        }
+    }
 }
 
 impl Default for Model {
