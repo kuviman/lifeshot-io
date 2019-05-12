@@ -31,3 +31,4 @@ deploy-server:
   script:
     - source /opt/scripts/setup-ssh.sh
     - scp artifacts/lifeshot-io lifeshot@server.lifeshot.io:/home/lifeshot/
+    - ssh lifeshot@server.lifeshot.io systemctl --user restart lifeshot-server
