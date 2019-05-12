@@ -23,10 +23,20 @@ impl<T> Drop for Connection<T> {
 }
 
 struct Handler<T> {
+    promise_handle: Option<promise::ChannelHandle<ws::Sender>>,
+    sender: Option<ws::Sender>,
     receiver: Box<Receiver<T> + Send>,
 }
 
 impl<T: Message> ws::Handler for Handler<T> {
+    fn on_open(&mut self, _: ws::Handshake) -> ws::Result<()> {
+        info!("Connected to the server");
+        self.promise_handle
+            .take()
+            .unwrap()
+            .ready(self.sender.take().unwrap());
+        Ok(())
+    }
     fn on_message(&mut self, message: ws::Message) -> ws::Result<()> {
         let message = deserialize_message(&message.into_data());
         self.receiver.handle(message);
@@ -42,9 +52,9 @@ struct Factory<S> {
 impl<S: Message> ws::Factory for Factory<S> {
     type Handler = Handler<S>;
     fn connection_made(&mut self, sender: ws::Sender) -> Handler<S> {
-        info!("Connected to the server");
-        self.promise_handle.take().unwrap().ready(sender);
         Handler {
+            promise_handle: self.promise_handle.take(),
+            sender: Some(sender),
             receiver: self.receiver.take().unwrap(),
         }
     }
