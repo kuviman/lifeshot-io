@@ -7,7 +7,7 @@ use model::*;
 pub struct ClientApp {
     context: Rc<geng::Context>,
     action: Arc<Mutex<Action>>,
-    model_recv: Arc<Mutex<Option<Model>>>,
+    recv: Arc<Mutex<Option<ServerMessage>>>,
     model: Model,
     mouse_pos: Vec2<f32>,
     connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
@@ -19,13 +19,13 @@ impl ClientApp {
 
     pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
         struct Receiver {
-            model: Arc<Mutex<Option<Model>>>,
+            recv: Arc<Mutex<Option<ServerMessage>>>,
             action: Arc<Mutex<Action>>,
             connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
         }
         impl net::Receiver<ServerMessage> for Receiver {
             fn handle(&mut self, message: ServerMessage) {
-                *self.model.lock().unwrap() = Some(message.model);
+                *self.recv.lock().unwrap() = Some(message);
                 use net::Sender;
                 if let Some(connection) = self.connection.lock().unwrap().as_mut() {
                     connection.send(ClientMessage {
@@ -34,7 +34,7 @@ impl ClientApp {
                 }
             }
         }
-        let model_recv = Arc::new(Mutex::new(None));
+        let recv = Arc::new(Mutex::new(None));
         let action = Arc::new(Mutex::new(default()));
         let connection = Arc::new(Mutex::new(None));
         let connection_promise = net::client::connect(
@@ -42,15 +42,15 @@ impl ClientApp {
             net_opts.port,
             Receiver {
                 action: action.clone(),
-                model: model_recv.clone(),
+                recv: recv.clone(),
                 connection: connection.clone(),
             },
         );
         Self {
             context: context.clone(),
             action,
-            model_recv,
-            model: default(),
+            recv,
+            model: Model::new(),
             connection,
             mouse_pos: vec2(0.0, 0.0),
             connection_promise: Box::new(connection_promise),
@@ -61,9 +61,9 @@ impl ClientApp {
 impl geng::App for ClientApp {
     fn update(&mut self, delta_time: f64) {
         {
-            let mut model = self.model_recv.lock().unwrap();
-            if let Some(model) = model.take() {
-                self.model = model;
+            let mut recv = self.recv.lock().unwrap();
+            if let Some(message) = recv.take() {
+                self.model.recv(message);
             }
         }
         self.model.update(delta_time as f32);

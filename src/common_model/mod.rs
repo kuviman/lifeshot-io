@@ -71,7 +71,7 @@ impl PlayerId {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Player {
     pub id: PlayerId,
-    entity: Entity,
+    pub entity: Entity,
     pub projectile: Option<Projectile>,
     pub action: Action,
 }
@@ -138,8 +138,8 @@ impl Player {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Projectile {
-    entity: Entity,
-    owner_id: PlayerId,
+    pub entity: Entity,
+    pub owner_id: PlayerId,
 }
 
 impl Deref for Projectile {
