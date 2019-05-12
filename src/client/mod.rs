@@ -3,7 +3,8 @@ use crate::*;
 pub struct ClientApp {
     context: Rc<geng::Context>,
     action: Arc<Mutex<Action>>,
-    model: Arc<Mutex<Option<Model>>>,
+    model_recv: Arc<Mutex<Option<Model>>>,
+    model: Model,
     mouse_pos: Vec2<f32>,
     connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
     connection_promise: Box<Promise<Output = net::client::Connection<ClientMessage>>>,
@@ -29,7 +30,7 @@ impl ClientApp {
                 }
             }
         }
-        let model = Arc::new(Mutex::new(None));
+        let model_recv = Arc::new(Mutex::new(None));
         let action = Arc::new(Mutex::new(default()));
         let connection = Arc::new(Mutex::new(None));
         let connection_promise = net::client::connect(
@@ -37,14 +38,15 @@ impl ClientApp {
             net_opts.port,
             Receiver {
                 action: action.clone(),
-                model: model.clone(),
+                model: model_recv.clone(),
                 connection: connection.clone(),
             },
         );
         Self {
             context: context.clone(),
             action,
-            model,
+            model_recv,
+            model: default(),
             connection,
             mouse_pos: vec2(0.0, 0.0),
             connection_promise: Box::new(connection_promise),
@@ -54,6 +56,13 @@ impl ClientApp {
 
 impl geng::App for ClientApp {
     fn update(&mut self, delta_time: f64) {
+        {
+            let mut model = self.model_recv.lock().unwrap();
+            if let Some(model) = model.take() {
+                self.model = model;
+            }
+        }
+        self.model.update(delta_time as f32);
         {
             let mut connection = self.connection.lock().unwrap();
             if connection.is_none() && self.connection_promise.ready() {
@@ -110,24 +119,14 @@ impl geng::App for ClientApp {
             mouse_pos
         };
 
-        if let Some(model) = self.model.lock().unwrap().as_ref() {
-            for player in model.players.values() {
-                self.context.draw_2d().ellipse(
-                    framebuffer,
-                    player.pos * scale + center,
-                    vec2(1.0, 1.0) * scale * player.size,
-                    Color::WHITE,
-                );
-                if let Some(ref projectile) = player.projectile {
-                    self.context.draw_2d().ellipse(
-                        framebuffer,
-                        projectile.pos * scale + center,
-                        vec2(1.0, 1.0) * scale * projectile.size,
-                        Color::WHITE,
-                    );
-                }
-            }
-            for projectile in &model.projectiles {
+        for player in self.model.players.values() {
+            self.context.draw_2d().ellipse(
+                framebuffer,
+                player.pos * scale + center,
+                vec2(1.0, 1.0) * scale * player.size,
+                Color::WHITE,
+            );
+            if let Some(ref projectile) = player.projectile {
                 self.context.draw_2d().ellipse(
                     framebuffer,
                     projectile.pos * scale + center,
@@ -135,6 +134,14 @@ impl geng::App for ClientApp {
                     Color::WHITE,
                 );
             }
-        };
+        }
+        for projectile in &self.model.projectiles {
+            self.context.draw_2d().ellipse(
+                framebuffer,
+                projectile.pos * scale + center,
+                vec2(1.0, 1.0) * scale * projectile.size,
+                Color::WHITE,
+            );
+        }
     }
 }
