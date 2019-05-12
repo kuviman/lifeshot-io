@@ -169,7 +169,7 @@ impl Projectile {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Model {
     pub players: HashMap<Id, Player>,
-    pub projectiles: Vec<Projectile>,
+    pub projectiles: HashMap<Id, Projectile>,
 }
 
 impl Model {
@@ -182,13 +182,13 @@ impl Model {
     pub fn update(&mut self, delta_time: f32) {
         for player in self.players.values_mut() {
             if let Some(projectile) = player.update(delta_time) {
-                self.projectiles.push(projectile);
+                self.projectiles.insert(projectile.id, projectile);
             }
         }
-        for projectile in &mut self.projectiles {
+        for projectile in self.projectiles.values_mut() {
             projectile.update(delta_time);
         }
-        for projectile in &mut self.projectiles {
+        for projectile in self.projectiles.values_mut() {
             for player in self.players.values_mut() {
                 if projectile.owner_id != player.id {
                     projectile.hit(player, Projectile::STRENGTH);
@@ -196,7 +196,7 @@ impl Model {
             }
         }
         self.players.retain(|_, e| e.alive());
-        self.projectiles.retain(|e| e.alive());
+        self.projectiles.retain(|_, e| e.alive());
     }
     pub fn handle(&mut self, player_id: Id, message: ClientMessage) {
         if let Some(player) = self.players.get_mut(&player_id) {
@@ -209,7 +209,7 @@ impl Default for Model {
     fn default() -> Self {
         Self {
             players: HashMap::new(),
-            projectiles: Vec::new(),
+            projectiles: HashMap::new(),
         }
     }
 }

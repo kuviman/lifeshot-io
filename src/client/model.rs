@@ -67,6 +67,9 @@ impl Projectile {
             entity: Entity::new(p.entity),
         }
     }
+    fn recv(&mut self, p: common_model::Projectile) {
+        self.entity.recv(p.entity);
+    }
 }
 
 pub struct Player {
@@ -102,21 +105,21 @@ impl Player {
 
 pub struct Model {
     pub players: HashMap<Id, Player>,
-    pub projectiles: Vec<Projectile>,
+    pub projectiles: HashMap<Id, Projectile>,
 }
 
 impl Model {
     pub fn new() -> Self {
         Self {
             players: HashMap::new(),
-            projectiles: Vec::new(),
+            projectiles: HashMap::new(),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
         for player in self.players.values_mut() {
             player.update(delta_time);
         }
-        for projectile in &mut self.projectiles {
+        for projectile in self.projectiles.values_mut() {
             projectile.update(delta_time);
         }
     }
@@ -134,11 +137,19 @@ impl Model {
         for (id, p) in message.model.players {
             self.players.insert(id, Player::new(p));
         }
-        self.projectiles = message
-            .model
-            .projectiles
-            .into_iter()
-            .map(|p| Projectile::new(p))
-            .collect();
+
+        let mut dead_projectiles: HashSet<Id> = self.projectiles.keys().cloned().collect();
+        for projectile in self.projectiles.values_mut() {
+            if let Some(upd) = message.model.projectiles.remove(&projectile.id) {
+                dead_projectiles.remove(&projectile.id);
+                projectile.recv(upd);
+            }
+        }
+        for projectile in dead_projectiles {
+            self.projectiles.remove(&projectile);
+        }
+        for (id, p) in message.model.projectiles {
+            self.projectiles.insert(id, Projectile::new(p));
+        }
     }
 }

@@ -139,7 +139,7 @@ impl geng::App for ClientApp {
                 );
             }
         }
-        for projectile in &self.model.projectiles {
+        for projectile in self.model.projectiles.values() {
             self.context.draw_2d().ellipse(
                 framebuffer,
                 projectile.pos * scale + center,
