@@ -1,5 +1,9 @@
 use crate::*;
 
+mod model;
+
+use model::*;
+
 pub struct ClientApp {
     context: Rc<geng::Context>,
     action: Arc<Mutex<Action>>,

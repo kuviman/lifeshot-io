@@ -4,12 +4,12 @@ use geng::prelude::*;
 use log::{debug, error, info, trace, warn};
 
 mod client;
-mod model;
+mod common_model;
 #[cfg(not(target_arch = "wasm32"))]
 mod server;
 
 use client::*;
-use model::*;
+use common_model::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use server::*;
 

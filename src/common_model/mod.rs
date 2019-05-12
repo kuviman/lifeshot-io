@@ -1,5 +1,9 @@
 use crate::*;
 
+pub mod prelude {
+    pub use super::{Action, ClientMessage, PlayerId, ServerMessage};
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entity {
     pub pos: Vec2<f32>,
@@ -168,6 +172,12 @@ pub struct Model {
 }
 
 impl Model {
+    pub fn new_player(&mut self) -> PlayerId {
+        let player = Player::new();
+        let player_id = player.id;
+        self.players.insert(player_id, player);
+        player_id
+    }
     pub fn update(&mut self, delta_time: f32) {
         for player in self.players.values_mut() {
             if let Some(projectile) = player.update(delta_time) {

@@ -1,5 +1,9 @@
 use crate::*;
 
+mod model;
+
+use model::*;
+
 pub struct Client {
     player_id: PlayerId,
     model: Arc<Mutex<Model>>,
@@ -40,15 +44,14 @@ impl net::server::App for Server {
     type ClientMessage = ClientMessage;
     const TICKS_PER_SECOND: f64 = 60.0;
     fn connect(&mut self, mut sender: Box<net::Sender<ServerMessage>>) -> Client {
-        let player = Player::new();
-        let player_id = player.id;
-        {
+        let player_id = {
             let mut model = self.model.lock().unwrap();
-            model.players.insert(player_id, player);
+            let player_id = model.new_player();
             sender.send(ServerMessage {
                 model: model.clone(),
             });
-        }
+            player_id
+        };
         Client {
             model: self.model.clone(),
             player_id,
