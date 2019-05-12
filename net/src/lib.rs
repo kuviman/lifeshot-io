@@ -9,11 +9,11 @@ pub use server::{Server, ServerHandle};
 pub trait Message: Serialize + for<'de> Deserialize<'de> + Send + 'static {}
 
 fn serialize_message<T: Message>(message: T) -> Vec<u8> {
-    bincode::serialize(&message).unwrap()
+    serde_json::to_vec(&message).unwrap()
 }
 
 fn deserialize_message<T: Message>(data: &[u8]) -> T {
-    bincode::deserialize(data).expect("Failed to deserialize message")
+    serde_json::from_slice(data).expect("Failed to deserialize message")
 }
 
 pub trait Sender<T>: Send {

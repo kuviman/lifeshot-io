@@ -9,4 +9,4 @@ geng = { git = "https://gitlab.com/kuviman/geng" }
 ws = "*"
 url = "*"
 log = "*"
-bincode = "*"
+serde_json = "*"
