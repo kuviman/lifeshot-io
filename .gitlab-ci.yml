@@ -25,11 +25,34 @@ build:
     paths:
       - artifacts
 
+build-web:
+  stage: build
+  image: registry.gitlab.com/kuviman/dock.rs/web
+  script:
+    - cargo web deploy --release
+    - mv $CARGO_TARGET_DIR/deploy artifacts/web
+  artifacts:
+    paths:
+      - artifacts
+
 deploy-server:
   stage: deploy
+  dependencies:
+    - build
   image: registry.gitlab.com/kuviman/dock.rs
   script:
     - source /opt/scripts/setup-ssh.sh
     - ssh lifeshot@server.lifeshot.io systemctl --user stop lifeshot-server
     - scp artifacts/lifeshot-io lifeshot@server.lifeshot.io:/home/lifeshot/
     - ssh lifeshot@server.lifeshot.io systemctl --user start lifeshot-server
+
+pages:
+  stage: deploy
+  dependencies:
+    - build-web
+  image: registry.gitlab.com/kuviman/dock.rs
+  script:
+    - mv artifacts/web public
+  artifacts:
+    paths:
+      - public
