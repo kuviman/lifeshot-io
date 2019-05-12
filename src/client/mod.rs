@@ -87,7 +87,7 @@ impl geng::App for ClientApp {
                 self.context.draw_2d().ellipse(
                     framebuffer,
                     player.pos * scale + center,
-                    vec2(1.0, 1.0) * scale,
+                    vec2(1.0, 1.0) * scale * player.size,
                     Color::WHITE,
                 );
             }

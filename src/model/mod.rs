@@ -1,5 +1,18 @@
 use crate::*;
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Entity {
+    pub pos: Vec2<f32>,
+    pub vel: Vec2<f32>,
+    pub size: f32,
+}
+
+impl Entity {
+    fn update(&mut self, delta_time: f32) {
+        self.pos += self.vel * delta_time;
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Action {
     pub target_vel: Vec2<f32>,
@@ -27,23 +40,40 @@ impl PlayerId {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Player {
-    pub pos: Vec2<f32>,
-    pub vel: Vec2<f32>,
+    entity: Entity,
     pub action: Action,
 }
 
+impl Deref for Player {
+    type Target = Entity;
+    fn deref(&self) -> &Entity {
+        &self.entity
+    }
+}
+
+impl DerefMut for Player {
+    fn deref_mut(&mut self) -> &mut Entity {
+        &mut self.entity
+    }
+}
+
 impl Player {
-    const ACCELERATION: f32 = 10.0;
+    const MAX_SPEED: f32 = 8.0;
+    const ACCELERATION: f32 = 15.0;
     pub fn new() -> Self {
         Self {
-            pos: vec2(0.0, 0.0),
-            vel: vec2(0.0, 0.0),
+            entity: Entity {
+                pos: vec2(0.0, 0.0),
+                vel: vec2(0.0, 0.0),
+                size: 1.0,
+            },
             action: default(),
         }
     }
     fn update(&mut self, delta_time: f32) {
-        self.vel += (self.action.target_vel - self.vel).clamp(Self::ACCELERATION * delta_time);
-        self.pos += self.vel * delta_time;
+        self.entity.vel += (self.action.target_vel.clamp(1.0) * Self::MAX_SPEED - self.entity.vel)
+            .clamp(Self::ACCELERATION * delta_time);
+        self.entity.update(delta_time);
     }
 }
 
