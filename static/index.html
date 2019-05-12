@@ -13,30 +13,14 @@
         }
 
         body {
-            padding: 1em 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
         }
 
         ul {
             list-style-type: disc;
             margin-top: 0.5em;
-        }
-
-        #game-container {
-            position: relative;
-            width: 50%;
-            padding-top: 37.5%;
-            margin: 1em auto;
-        }
-
-        #game-inner-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            border: 3px solid black;
-            border-radius: 10px;
-            overflow: hidden;
         }
 
         #geng-canvas {
@@ -237,17 +221,14 @@
             </svg></a></div>
     <!-- GitLab corner END -->
 
-    <div id="game-container">
-        <div id="game-inner-container">
-            <div id="error-screen" style="display: none;">
-                <div class="error-container">
-                    <h1>Whoops...</h1>
-                    <pre id="error-message">Something went wrong</pre>
-                </div>
-            </div>
-            <canvas id="geng-canvas"></canvas>
+    <div id="error-screen" style="display: none;">
+        <div class="error-container">
+            <h1>Whoops...</h1>
+            <pre id="error-message">Something went wrong</pre>
         </div>
     </div>
+    <canvas id="geng-canvas"></canvas>
+
     <script src="lifeshot-io.js"></script>
 </body>
 
