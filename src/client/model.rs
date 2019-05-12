@@ -24,7 +24,7 @@ impl Entity {
         }
     }
     fn recv(&mut self, e: common_model::Entity) {
-        self.next_pos = e.pos;
+        self.next_pos = e.pos + e.vel * Self::DELAY;
         self.next_vel = e.vel;
         self.size = e.size;
         self.delayed = Self::DELAY;
