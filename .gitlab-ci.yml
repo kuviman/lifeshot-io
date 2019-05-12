@@ -1,0 +1,33 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cache/.cargo
+  CARGO_TARGET_DIR: $CI_PROJECT_DIR/.cache/.cargo-target
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG-$CI_JOB_NAME"
+  paths:
+    - .cache
+
+before_script:
+  - mkdir -p .cache
+  - mkdir -p artifacts
+
+build:
+  stage: build
+  image: registry.gitlab.com/kuviman/dock.rs
+  script:
+    - cargo build --release
+    - mv $CARGO_TARGET_DIR/release/lifeshot-io artifacts/
+  artifacts:
+    paths:
+      - artifacts
+
+deploy-server:
+  stage: deploy
+  image: registry.gitlab.com/kuviman/dock.rs
+  script:
+    - source /opt/scripts/setup-ssh.sh
+    - scp artifacts/lifeshot-io lifeshot@server.lifeshot.io:/home/lifeshot/
