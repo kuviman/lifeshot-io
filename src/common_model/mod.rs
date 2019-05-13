@@ -180,6 +180,7 @@ impl Projectile {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Model {
+    pub current_time: f32,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
 }
@@ -192,6 +193,7 @@ impl Model {
         player_id
     }
     pub fn update(&mut self, delta_time: f32) {
+        self.current_time += delta_time;
         for player in self.players.values_mut() {
             if let Some(projectile) = player.update(delta_time) {
                 self.projectiles.insert(projectile.id, projectile);
@@ -220,6 +222,7 @@ impl Model {
 impl Default for Model {
     fn default() -> Self {
         Self {
+            current_time: 0.0,
             players: HashMap::new(),
             projectiles: HashMap::new(),
         }
