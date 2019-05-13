@@ -38,7 +38,7 @@ impl Entity {
             let t_vel = e.vel + (target_vel - e.vel).clamp(acceleration * t);
             self.next_pos = e.pos + (e.vel + t_vel) / 2.0 * t;
             self.next_pos += t_vel * (next_time - t);
-            self.next_vel = e.vel + (target_vel - e.vel).clamp(acceleration * next_time);
+            self.next_vel = t_vel;
         } else {
             self.next_pos = e.pos + e.vel * next_time;
             self.next_vel = e.vel;
@@ -115,7 +115,10 @@ impl Player {
     fn recv(&mut self, p: common_model::Player, sync_delay: f32) {
         self.entity.recv(
             p.entity,
-            Some((p.action.target_vel, common_model::Player::ACCELERATION)),
+            Some((
+                p.action.target_vel.clamp(1.0) * common_model::Player::MAX_SPEED,
+                common_model::Player::ACCELERATION,
+            )),
             sync_delay,
         );
         self.projectile = p.projectile.map(|p| Projectile::new(p));
