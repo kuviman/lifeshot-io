@@ -41,7 +41,7 @@ struct Opts {
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
-    env_logger::init_from_env(env_logger::Env::new().filter_or("LISH_LOG", "lish,net"));
+    env_logger::init_from_env(env_logger::Env::new().filter_or("LIFESHOT_LOG", "lifeshot_io,net"));
     trace!("Initializing");
 
     #[cfg(target_arch = "wasm32")]
@@ -89,7 +89,7 @@ fn main() {
 
     if client {
         let context = Rc::new(geng::Context::new(geng::ContextOptions {
-            title: "Lish".to_owned(),
+            title: "LifeShot.io".to_owned(),
             ..default()
         }));
         let app = ClientApp::new(&context, opts.net_opts.clone());
