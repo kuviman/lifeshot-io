@@ -19,6 +19,8 @@ pub struct NetOpts {
     host: String,
     #[structopt(long = "port", default_value = "1154")]
     port: u16,
+    #[structopt(long = "extra-delay")]
+    extra_delay: Option<u64>,
 }
 
 #[derive(structopt::StructOpt, Debug)]

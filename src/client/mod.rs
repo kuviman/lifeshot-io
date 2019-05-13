@@ -20,12 +20,19 @@ impl ClientApp {
     pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
         struct Receiver {
             recv: Arc<Mutex<Option<ServerMessage>>>,
+            net_delay: Option<u64>,
             action: Arc<Mutex<Action>>,
             connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
         }
         impl net::Receiver<ServerMessage> for Receiver {
             fn handle(&mut self, message: ServerMessage) {
+                if let Some(delay) = self.net_delay {
+                    std::thread::sleep(std::time::Duration::from_millis(delay));
+                }
                 *self.recv.lock().unwrap() = Some(message);
+                if let Some(delay) = self.net_delay {
+                    std::thread::sleep(std::time::Duration::from_millis(delay));
+                }
                 use net::Sender;
                 if let Some(connection) = self.connection.lock().unwrap().as_mut() {
                     connection.send(ClientMessage {
@@ -41,6 +48,7 @@ impl ClientApp {
             &net_opts.host,
             net_opts.port,
             Receiver {
+                net_delay: net_opts.extra_delay,
                 action: action.clone(),
                 recv: recv.clone(),
                 connection: connection.clone(),
