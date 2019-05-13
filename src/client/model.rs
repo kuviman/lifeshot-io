@@ -152,7 +152,7 @@ impl Model {
     }
     pub fn recv(&mut self, mut message: ServerMessage) {
         let sync_delay = if let Some(time) = self.last_sync_time {
-            message.model.current_time - time
+            (message.model.current_time - time) / 2.0
         } else {
             0.0
         };
