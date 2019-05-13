@@ -23,11 +23,20 @@ impl Entity {
             delayed: 0.0,
         }
     }
-    fn recv(&mut self, e: common_model::Entity) {
-        self.next_pos = e.pos + e.vel * Self::DELAY;
-        self.next_vel = e.vel;
+    fn recv(&mut self, e: common_model::Entity, target_vel: Option<(Vec2<f32>, f32)>) {
         self.size = e.size;
         self.delayed = Self::DELAY;
+        if let Some((target_vel, acceleration)) = target_vel {
+            let time_to_target_vel = (target_vel - e.vel).len() / acceleration;
+            let t = time_to_target_vel.min(self.delayed);
+            let t_vel = e.vel + (target_vel - e.vel).clamp(acceleration * t);
+            self.next_pos = e.pos + (e.vel + t_vel) / 2.0 * t;
+            self.next_pos += t_vel * (self.delayed - t);
+            self.next_vel = e.vel + (target_vel - e.vel).clamp(acceleration * self.delayed);
+        } else {
+            self.next_pos = e.pos + e.vel * Self::DELAY;
+            self.next_vel = e.vel;
+        }
     }
     fn update(&mut self, mut delta_time: f32) {
         if self.delayed > 0.0 {
@@ -68,7 +77,7 @@ impl Projectile {
         }
     }
     fn recv(&mut self, p: common_model::Projectile) {
-        self.entity.recv(p.entity);
+        self.entity.recv(p.entity, None);
     }
 }
 
@@ -98,7 +107,10 @@ impl Player {
         }
     }
     fn recv(&mut self, p: common_model::Player) {
-        self.entity.recv(p.entity);
+        self.entity.recv(
+            p.entity,
+            Some((p.action.target_vel, common_model::Player::ACCELERATION)),
+        );
         self.projectile = p.projectile.map(|p| Projectile::new(p));
     }
 }
