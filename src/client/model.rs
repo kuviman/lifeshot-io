@@ -46,12 +46,15 @@ impl Entity {
     }
     fn update(&mut self, mut delta_time: f32) {
         if self.delayed > 0.0 {
+            let next_pos_using_vel = self.pos + (self.vel + self.next_vel) / 2.0 * self.delayed;
             let dt = delta_time.min(self.delayed);
             let k = dt / self.delayed;
             self.delayed -= delta_time;
             delta_time -= dt;
-            self.pos += (self.next_pos - self.pos) * k;
-            self.vel += (self.next_vel - self.vel) * k;
+            let next_vel = self.vel + (self.next_vel - self.vel) * k;
+            self.pos += (self.vel + next_vel) / 2.0 * dt;
+            self.pos += (self.next_pos - next_pos_using_vel) * k;
+            self.vel = next_vel;
         }
         self.pos += self.vel * delta_time;
     }
