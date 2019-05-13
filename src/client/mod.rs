@@ -37,9 +37,6 @@ impl ClientApp {
                     self.max_ping = p;
                     debug!("New max ping: {} ms", (p * 1000.0) as u64);
                 }
-                if let Some(delay) = self.net_delay {
-                    std::thread::sleep(std::time::Duration::from_millis(delay));
-                }
                 use net::Sender;
                 if let Some(connection) = self.connection.lock().unwrap().as_mut() {
                     connection.send(ClientMessage {
