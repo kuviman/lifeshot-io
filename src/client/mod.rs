@@ -23,6 +23,8 @@ impl ClientApp {
             net_delay: Option<u64>,
             action: Arc<Mutex<Action>>,
             connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
+            timer: Timer,
+            max_ping: f64,
         }
         impl net::Receiver<ServerMessage> for Receiver {
             fn handle(&mut self, message: ServerMessage) {
@@ -30,6 +32,11 @@ impl ClientApp {
                     std::thread::sleep(std::time::Duration::from_millis(delay));
                 }
                 *self.recv.lock().unwrap() = Some(message);
+                let p = self.timer.tick();
+                if p > self.max_ping {
+                    self.max_ping = p;
+                    debug!("New max ping: {} ms", (p * 1000.0) as u64);
+                }
                 if let Some(delay) = self.net_delay {
                     std::thread::sleep(std::time::Duration::from_millis(delay));
                 }
@@ -52,6 +59,8 @@ impl ClientApp {
                 action: action.clone(),
                 recv: recv.clone(),
                 connection: connection.clone(),
+                timer: Timer::new(),
+                max_ping: 0.0,
             },
         );
         Self {
