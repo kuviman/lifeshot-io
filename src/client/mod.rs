@@ -8,8 +8,10 @@ use model::*;
 
 pub struct ClientApp {
     context: Rc<geng::Context>,
+    client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
     action: Arc<Mutex<Action>>,
+    camera_pos: Vec2<f32>,
     recv: Arc<Mutex<Option<ServerMessage>>>,
     model: Model,
     mouse_pos: Vec2<f32>,
@@ -65,8 +67,10 @@ impl ClientApp {
         );
         Self {
             context: context.clone(),
+            client_player_id: None,
             circle_renderer: CircleRenderer::new(context),
             action,
+            camera_pos: vec2(0.0, 0.0),
             recv,
             model: Model::new(),
             connection,
@@ -81,6 +85,7 @@ impl geng::App for ClientApp {
         {
             let mut recv = self.recv.lock().unwrap();
             if let Some(message) = recv.take() {
+                self.client_player_id = Some(message.client_player_id);
                 self.model.recv(message);
             }
         }
@@ -119,6 +124,11 @@ impl geng::App for ClientApp {
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         let rules = &self.model.rules;
+        if let Some(id) = self.client_player_id {
+            if let Some(player) = self.model.players.get(&id) {
+                self.camera_pos = player.pos;
+            }
+        }
 
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         let framebuffer_size = framebuffer.get_size().map(|x| x as f32);
@@ -126,8 +136,8 @@ impl geng::App for ClientApp {
         let scale = framebuffer_size.y / Self::CAMERA_FOV;
 
         let view_matrix = Mat4::scale(vec3(framebuffer_size.y / framebuffer_size.x, 1.0, 1.0))
-            * Mat4::scale_uniform(2.0 / Self::CAMERA_FOV);
-        // * Mat4::translate(-self.camera_pos.extend(0.0));
+            * Mat4::scale_uniform(2.0 / Self::CAMERA_FOV)
+            * Mat4::translate(-self.camera_pos.extend(0.0));
         self.mouse_pos = {
             let mouse_pos = self.context.window().mouse_pos().map(|x| x as f32);
             let mouse_pos = vec2(

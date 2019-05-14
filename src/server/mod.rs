@@ -21,6 +21,7 @@ impl net::Receiver<ClientMessage> for Client {
         let mut model = self.model.lock().unwrap();
         model.handle(self.player_id, message);
         self.sender.send(ServerMessage {
+            client_player_id: self.player_id,
             model: model.clone(),
         });
     }
@@ -48,6 +49,7 @@ impl net::server::App for Server {
             let mut model = self.model.lock().unwrap();
             let player_id = model.new_player();
             sender.send(ServerMessage {
+                client_player_id: player_id,
                 model: model.clone(),
             });
             player_id

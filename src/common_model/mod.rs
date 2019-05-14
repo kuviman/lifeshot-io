@@ -276,6 +276,7 @@ impl Default for Model {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ServerMessage {
     pub model: Model,
+    pub client_player_id: Id,
 }
 
 impl net::Message for ServerMessage {}
