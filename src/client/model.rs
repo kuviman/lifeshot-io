@@ -136,6 +136,7 @@ pub struct Model {
     pub rules: Rules,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
+    pub food: Vec<common_model::Food>,
 }
 
 impl Model {
@@ -145,6 +146,7 @@ impl Model {
             rules: default(),
             players: HashMap::new(),
             projectiles: HashMap::new(),
+            food: Vec::new(),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
@@ -193,5 +195,7 @@ impl Model {
         for (id, p) in message.model.projectiles {
             self.projectiles.insert(id, Projectile::new(p));
         }
+
+        self.food = message.model.food;
     }
 }

@@ -111,6 +111,7 @@ impl DerefMut for Player {
 }
 
 impl Player {
+    pub const INITIAL_SIZE: f32 = 1.0;
     pub const MAX_SPEED: f32 = 8.0;
     pub const ACCELERATION: f32 = 15.0;
     pub const PROJECTILE_MASS_GAIN_SPEED: f32 = 0.3;
@@ -122,7 +123,7 @@ impl Player {
                 id: Id::new(),
                 pos: vec2(0.0, 0.0),
                 vel: vec2(0.0, 0.0),
-                size: 1.0,
+                size: Self::INITIAL_SIZE,
             },
             action: default(),
         }
@@ -187,6 +188,39 @@ impl DerefMut for Projectile {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Food {
+    pub entity: Entity,
+}
+
+impl Deref for Food {
+    type Target = Entity;
+    fn deref(&self) -> &Entity {
+        &self.entity
+    }
+}
+
+impl DerefMut for Food {
+    fn deref_mut(&mut self) -> &mut Entity {
+        &mut self.entity
+    }
+}
+
+impl Food {
+    const SIZE: f32 = 0.1;
+    const EFFECIENCY: f32 = 3.0;
+    fn new(pos: Vec2<f32>, rules: &Rules) -> Self {
+        Self {
+            entity: Entity {
+                id: Id::new(),
+                size: Self::SIZE,
+                pos,
+                vel: vec2(0.0, 0.0),
+            },
+        }
+    }
+}
+
 impl Projectile {
     const SPEED: f32 = 25.0;
     const DEATH_SPEED: f32 = 0.1;
@@ -243,9 +277,12 @@ pub struct Model {
     pub current_time: f32,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
+    pub food: Vec<Food>,
 }
 
 impl Model {
+    pub const MAX_FOOD_EXTRA: f32 = 5.0;
+
     pub fn new_player(&mut self) -> Id {
         let player = Player::new();
         let player_id = player.id;
@@ -283,8 +320,45 @@ impl Model {
             Entity::collide(p1, p2, rules);
         });
 
+        let total_mass = self.players.values().map(|p| p.mass()).sum::<f32>()
+            + Food::EFFECIENCY * self.food.iter().map(|f| f.mass()).sum::<f32>();
+        if total_mass - self.players.len() as f32 * Player::INITIAL_SIZE * Player::INITIAL_SIZE
+            < Self::MAX_FOOD_EXTRA
+        {
+            let pos = vec2(
+                global_rng().gen_range(0.0, rules.world_size),
+                global_rng().gen_range(0.0, rules.world_size),
+            );
+            const N: usize = 10;
+            let mut n = N;
+            for _ in 0..5 {
+                n = min(n, global_rng().gen_range(1, N));
+            }
+            for _ in 0..n {
+                self.food.push(Food::new(
+                    rules.normalize_pos(
+                        pos + vec2(
+                            global_rng().gen_range(-1.0, 1.0),
+                            global_rng().gen_range(-1.0, 1.0),
+                        ) / 5.0,
+                    ),
+                    rules,
+                ));
+            }
+        }
+
+        for player in self.players.values_mut() {
+            for food in &mut self.food {
+                if rules.normalize_delta(player.pos - food.pos).len() < player.size + food.size {
+                    player.add_mass(food.mass() * Food::EFFECIENCY);
+                    food.size = 0.0;
+                }
+            }
+        }
+
         self.players.retain(|_, e| e.alive());
         self.projectiles.retain(|_, e| e.alive());
+        self.food.retain(|e| e.alive());
     }
     pub fn handle(&mut self, player_id: Id, message: ClientMessage) {
         if let Some(player) = self.players.get_mut(&player_id) {
@@ -300,6 +374,7 @@ impl Default for Model {
             current_time: 0.0,
             players: HashMap::new(),
             projectiles: HashMap::new(),
+            food: Vec::new(),
         }
     }
 }

@@ -199,6 +199,14 @@ impl geng::App for ClientApp {
             }
         }
 
+        for food in &self.model.food {
+            self.circle_renderer.queue(circle_renderer::Instance {
+                i_pos: food.pos,
+                i_size: food.size,
+                i_color: Color::GREEN,
+            });
+        }
+
         for player in self.model.players.values() {
             self.circle_renderer.queue(circle_renderer::Instance {
                 i_pos: player.pos,
