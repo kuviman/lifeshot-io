@@ -244,6 +244,14 @@ impl geng::App for ClientApp {
             }
         }
 
+        for spark in &self.model.sparks {
+            self.circle_renderer.queue(circle_renderer::Instance {
+                i_pos: spark.pos,
+                i_color: Color::rgba(1.0, 1.0, 1.0, (1.0 - spark.t / Spark::TIME) * 0.5),
+                i_size: spark.size,
+            })
+        }
+
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
     }
 }

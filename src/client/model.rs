@@ -23,6 +23,9 @@ impl Entity {
             delayed: 0.0,
         }
     }
+    fn mass(&self) -> f32 {
+        self.size * self.size
+    }
     fn recv(
         &mut self,
         e: common_model::Entity,
@@ -65,6 +68,7 @@ impl Entity {
 pub struct Projectile {
     owner_id: Id,
     entity: Entity,
+    next_spark: f32,
 }
 
 impl Deref for Projectile {
@@ -81,14 +85,50 @@ impl DerefMut for Projectile {
 }
 
 impl Projectile {
+    const SPARK_FREQ: f32 = 500.0;
     fn new(p: common_model::Projectile) -> Self {
         Self {
             owner_id: p.owner_id,
             entity: Entity::new(p.entity),
+            next_spark: 0.0,
         }
     }
     fn recv(&mut self, p: common_model::Projectile, sync_delay: f32, rules: &Rules) {
         self.entity.recv(p.entity, None, sync_delay, rules);
+    }
+    fn update_sparks(&mut self, delta_time: f32, sparks: &mut Vec<Spark>) {
+        self.next_spark -= delta_time * self.entity.mass();
+        while self.next_spark < 0.0 {
+            self.next_spark += 1.0 / Self::SPARK_FREQ;
+            sparks.push(Spark::new(&self.entity));
+        }
+    }
+}
+
+pub struct Spark {
+    pub pos: Vec2<f32>,
+    pub size: f32,
+    pub vel: Vec2<f32>,
+    pub t: f32,
+}
+
+impl Spark {
+    pub const TIME: f32 = 0.3;
+    const MAX_SPEED: f32 = 5.0;
+    pub fn new(e: &Entity) -> Self {
+        Self {
+            pos: e.pos,
+            size: global_rng().gen_range(e.size / 2.0, e.size),
+            vel: random_circle_point() * Self::MAX_SPEED,
+            t: 0.0,
+        }
+    }
+    fn update(&mut self, delta_time: f32) {
+        self.pos += self.vel * delta_time;
+        self.t += delta_time;
+    }
+    fn alive(&self) -> bool {
+        self.t < Self::TIME
     }
 }
 
@@ -137,6 +177,7 @@ pub struct Model {
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
     pub food: Vec<common_model::Food>,
+    pub sparks: Vec<Spark>,
 }
 
 impl Model {
@@ -147,16 +188,25 @@ impl Model {
             players: HashMap::new(),
             projectiles: HashMap::new(),
             food: Vec::new(),
+            sparks: Vec::new(),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
         let rules = &self.rules;
         for player in self.players.values_mut() {
             player.update(delta_time, rules);
+            if let Some(projectile) = &mut player.projectile {
+                projectile.update_sparks(delta_time, &mut self.sparks);
+            }
         }
         for projectile in self.projectiles.values_mut() {
             projectile.update(delta_time, rules);
+            projectile.update_sparks(delta_time, &mut self.sparks);
         }
+        for spark in &mut self.sparks {
+            spark.update(delta_time);
+        }
+        self.sparks.retain(|e| e.alive());
     }
     pub fn recv(&mut self, mut message: ServerMessage) {
         self.rules = message.model.rules;
