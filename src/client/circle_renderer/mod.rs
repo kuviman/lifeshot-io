@@ -5,7 +5,7 @@ struct QuadVertex {
     a_pos: Vec2<f32>,
 }
 
-#[derive(ugli::Vertex, Debug)]
+#[derive(ugli::Vertex, Debug, Clone)]
 pub struct Instance {
     pub i_pos: Vec2<f32>,
     pub i_size: f32,
