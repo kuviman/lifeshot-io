@@ -14,13 +14,9 @@ use common_model::prelude::*;
 use server::*;
 
 fn random_circle_point() -> Vec2<f32> {
-    let mut rng = global_rng();
-    loop {
-        let result = vec2(rng.gen_range(-1.0, 1.0), rng.gen_range(-1.0, 1.0));
-        if result.len() < 1.0 {
-            return result;
-        }
-    }
+    let a = global_rng().gen_range(0.0, 2.0 * std::f32::consts::PI);
+    let r = global_rng().gen_range(0.0, 1.0).sqrt();
+    vec2(r * a.cos(), r * a.sin())
 }
 
 #[derive(structopt::StructOpt, Debug, Clone)]
