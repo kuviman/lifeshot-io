@@ -221,6 +221,21 @@ impl geng::App for ClientApp {
             });
         }
 
+        for player in self.model.players.values() {
+            let dv = rules.normalize_delta(player.pos - self.camera_pos);
+            let max_y = Self::CAMERA_FOV / 2.0;
+            let max_x = max_y * framebuffer_size.x / framebuffer_size.y;
+            if dv.x.abs() > max_x || dv.y.abs() > max_y {
+                let mut color = Color::WHITE;
+                color.a = 0.5;
+                self.circle_renderer.queue(circle_renderer::Instance {
+                    i_pos: self.camera_pos + vec2(clamp_abs(dv.x, max_x), clamp_abs(dv.y, max_y)),
+                    i_color: color,
+                    i_size: player.size,
+                });
+            }
+        }
+
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
     }
 }
