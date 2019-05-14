@@ -1,11 +1,14 @@
 use crate::*;
 
+mod circle_renderer;
 mod model;
 
+use circle_renderer::CircleRenderer;
 use model::*;
 
 pub struct ClientApp {
     context: Rc<geng::Context>,
+    circle_renderer: CircleRenderer,
     action: Arc<Mutex<Action>>,
     recv: Arc<Mutex<Option<ServerMessage>>>,
     model: Model,
@@ -62,6 +65,7 @@ impl ClientApp {
         );
         Self {
             context: context.clone(),
+            circle_renderer: CircleRenderer::new(context),
             action,
             recv,
             model: Model::new(),
@@ -114,6 +118,8 @@ impl geng::App for ClientApp {
         }
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        let rules = &self.model.rules;
+
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         let framebuffer_size = framebuffer.get_size().map(|x| x as f32);
         let center = framebuffer_size / 2.0;
@@ -134,28 +140,27 @@ impl geng::App for ClientApp {
         };
 
         for player in self.model.players.values() {
-            self.context.draw_2d().ellipse(
-                framebuffer,
-                player.pos * scale + center,
-                vec2(1.0, 1.0) * scale * player.size,
-                Color::WHITE,
-            );
+            self.circle_renderer.queue(circle_renderer::Instance {
+                i_pos: player.pos,
+                i_size: player.size,
+                i_color: Color::WHITE,
+            });
             if let Some(ref projectile) = player.projectile {
-                self.context.draw_2d().ellipse(
-                    framebuffer,
-                    projectile.pos * scale + center,
-                    vec2(1.0, 1.0) * scale * projectile.size,
-                    Color::WHITE,
-                );
+                self.circle_renderer.queue(circle_renderer::Instance {
+                    i_pos: projectile.pos,
+                    i_size: projectile.size,
+                    i_color: Color::WHITE,
+                });
             }
         }
         for projectile in self.model.projectiles.values() {
-            self.context.draw_2d().ellipse(
-                framebuffer,
-                projectile.pos * scale + center,
-                vec2(1.0, 1.0) * scale * projectile.size,
-                Color::WHITE,
-            );
+            self.circle_renderer.queue(circle_renderer::Instance {
+                i_pos: projectile.pos,
+                i_size: projectile.size,
+                i_color: Color::WHITE,
+            });
         }
+
+        self.circle_renderer.draw(framebuffer, view_matrix, rules);
     }
 }
