@@ -155,11 +155,14 @@ impl geng::App for ClientApp {
     }
     fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
         let rules = &self.model.rules;
+        let mut player_alive = false;
         if let Some(id) = self.client_player_id {
             if let Some(player) = self.model.players.get(&id) {
                 self.camera_pos = player.pos;
+                player_alive = true;
             }
         }
+        let player_alive = player_alive;
 
         ugli::clear(framebuffer, Some(Color::BLACK), None);
         let framebuffer_size = framebuffer.get_size().map(|x| x as f32);
@@ -182,6 +185,18 @@ impl geng::App for ClientApp {
 
         for (p, _) in &self.background {
             self.circle_renderer.queue(p.clone());
+        }
+
+        if player_alive {
+            let dv = (self.mouse_pos - self.camera_pos).normalize() * Self::CAMERA_FOV;
+            const N: usize = 40;
+            for i in 1..=N {
+                self.circle_renderer.queue(circle_renderer::Instance {
+                    i_pos: self.camera_pos + dv * i as f32 / N as f32,
+                    i_color: Color::rgba(0.5, 0.5, 1.0, 0.4),
+                    i_size: 0.1,
+                });
+            }
         }
 
         for player in self.model.players.values() {
