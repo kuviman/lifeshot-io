@@ -1,7 +1,7 @@
 use crate::*;
 
 pub mod prelude {
-    pub use super::{Action, ClientMessage, Id, ServerMessage};
+    pub use super::{Action, ClientMessage, Id, Rules, ServerMessage};
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -13,8 +13,8 @@ pub struct Entity {
 }
 
 impl Entity {
-    fn update(&mut self, delta_time: f32) {
-        self.pos += self.vel * delta_time;
+    fn update(&mut self, delta_time: f32, rules: &Rules) {
+        self.pos = rules.normalize_pos(self.pos + self.vel * delta_time);
     }
     fn alive(&self) -> bool {
         self.size > 0.0
@@ -26,8 +26,9 @@ impl Entity {
         let mass = self.mass() + delta_mass;
         self.size = mass.max(0.0).sqrt();
     }
-    pub fn hit(&mut self, target: &mut Self, k: f32) -> bool {
-        let penetration = (self.size + target.size) - (self.pos - target.pos).len();
+    pub fn hit(&mut self, target: &mut Self, k: f32, rules: &Rules) -> bool {
+        let penetration =
+            (self.size + target.size) - rules.normalize_delta(self.pos - target.pos).len();
         let penetration = penetration.min(min(self.size, target.size));
         if penetration > 0.0 {
             let prev_mass = self.mass();
@@ -108,10 +109,10 @@ impl Player {
             action: default(),
         }
     }
-    fn update(&mut self, delta_time: f32) -> Option<Projectile> {
+    fn update(&mut self, delta_time: f32, rules: &Rules) -> Option<Projectile> {
         self.entity.vel += (self.action.target_vel.clamp(1.0) * Self::MAX_SPEED - self.entity.vel)
             .clamp(Self::ACCELERATION * delta_time);
-        self.entity.update(delta_time);
+        self.entity.update(delta_time, rules);
 
         if self.action.shoot {
             if self.projectile.is_none() {
@@ -172,14 +173,55 @@ impl Projectile {
     const SPEED: f32 = 25.0;
     const DEATH_SPEED: f32 = 0.1;
     const STRENGTH: f32 = 0.5;
-    fn update(&mut self, delta_time: f32) {
+    fn update(&mut self, delta_time: f32, rules: &Rules) {
         self.size -= Self::DEATH_SPEED * delta_time;
-        self.entity.update(delta_time);
+        self.entity.update(delta_time, rules);
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Rules {
+    pub world_size: f32,
+}
+
+impl Default for Rules {
+    fn default() -> Self {
+        Self { world_size: 100.0 }
+    }
+}
+
+impl Rules {
+    pub fn normalize_pos(&self, pos: Vec2<f32>) -> Vec2<f32> {
+        let mut pos = pos;
+        while pos.x > self.world_size {
+            pos.x -= self.world_size;
+        }
+        while pos.x < 0.0 {
+            pos.x += self.world_size;
+        }
+        while pos.y > self.world_size {
+            pos.y -= self.world_size;
+        }
+        while pos.y < 0.0 {
+            pos.y += self.world_size;
+        }
+        pos
+    }
+    pub fn normalize_delta(&self, v: Vec2<f32>) -> Vec2<f32> {
+        let mut v = self.normalize_pos(v);
+        if v.x > self.world_size / 2.0 {
+            v.x -= self.world_size;
+        }
+        if v.y > self.world_size / 2.0 {
+            v.y -= self.world_size;
+        }
+        v
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Model {
+    pub rules: Rules,
     pub current_time: f32,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
@@ -193,19 +235,20 @@ impl Model {
         player_id
     }
     pub fn update(&mut self, delta_time: f32) {
+        let rules = &self.rules;
         self.current_time += delta_time;
         for player in self.players.values_mut() {
-            if let Some(projectile) = player.update(delta_time) {
+            if let Some(projectile) = player.update(delta_time, rules) {
                 self.projectiles.insert(projectile.id, projectile);
             }
         }
         for projectile in self.projectiles.values_mut() {
-            projectile.update(delta_time);
+            projectile.update(delta_time, rules);
         }
         for projectile in self.projectiles.values_mut() {
             for player in self.players.values_mut() {
                 if projectile.owner_id != player.id {
-                    projectile.hit(player, Projectile::STRENGTH);
+                    projectile.hit(player, Projectile::STRENGTH, rules);
                 }
             }
         }
@@ -222,6 +265,7 @@ impl Model {
 impl Default for Model {
     fn default() -> Self {
         Self {
+            rules: default(),
             current_time: 0.0,
             players: HashMap::new(),
             projectiles: HashMap::new(),

@@ -28,6 +28,7 @@ impl Entity {
         e: common_model::Entity,
         target_vel: Option<(Vec2<f32>, f32)>,
         sync_delay: f32,
+        rules: &Rules,
     ) {
         self.size = e.size;
         self.delayed = Self::DELAY;
@@ -44,7 +45,7 @@ impl Entity {
             self.next_vel = e.vel;
         }
     }
-    fn update(&mut self, mut delta_time: f32) {
+    fn update(&mut self, mut delta_time: f32, rules: &Rules) {
         if self.delayed > 0.0 {
             let next_pos_using_vel = self.pos + (self.vel + self.next_vel) / 2.0 * self.delayed;
             let dt = delta_time.min(self.delayed);
@@ -53,10 +54,11 @@ impl Entity {
             delta_time -= dt;
             let next_vel = self.vel + (self.next_vel - self.vel) * k;
             self.pos += (self.vel + next_vel) / 2.0 * dt;
-            self.pos += (self.next_pos - next_pos_using_vel) * k;
+
+            self.pos += rules.normalize_delta(self.next_pos - next_pos_using_vel) * k;
             self.vel = next_vel;
         }
-        self.pos += self.vel * delta_time;
+        self.pos = rules.normalize_pos(self.pos + self.vel * delta_time);
     }
 }
 
@@ -85,8 +87,8 @@ impl Projectile {
             entity: Entity::new(p.entity),
         }
     }
-    fn recv(&mut self, p: common_model::Projectile, sync_delay: f32) {
-        self.entity.recv(p.entity, None, sync_delay);
+    fn recv(&mut self, p: common_model::Projectile, sync_delay: f32, rules: &Rules) {
+        self.entity.recv(p.entity, None, sync_delay, rules);
     }
 }
 
@@ -115,7 +117,7 @@ impl Player {
             projectile: p.projectile.map(|p| Projectile::new(p)),
         }
     }
-    fn recv(&mut self, p: common_model::Player, sync_delay: f32) {
+    fn recv(&mut self, p: common_model::Player, sync_delay: f32, rules: &Rules) {
         self.entity.recv(
             p.entity,
             Some((
@@ -123,6 +125,7 @@ impl Player {
                 common_model::Player::ACCELERATION,
             )),
             sync_delay,
+            rules,
         );
         self.projectile = p.projectile.map(|p| Projectile::new(p));
     }
@@ -130,6 +133,7 @@ impl Player {
 
 pub struct Model {
     pub last_sync_time: Option<f32>,
+    pub rules: Rules,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
 }
@@ -138,19 +142,23 @@ impl Model {
     pub fn new() -> Self {
         Self {
             last_sync_time: None,
+            rules: default(),
             players: HashMap::new(),
             projectiles: HashMap::new(),
         }
     }
     pub fn update(&mut self, delta_time: f32) {
+        let rules = &self.rules;
         for player in self.players.values_mut() {
-            player.update(delta_time);
+            player.update(delta_time, rules);
         }
         for projectile in self.projectiles.values_mut() {
-            projectile.update(delta_time);
+            projectile.update(delta_time, rules);
         }
     }
     pub fn recv(&mut self, mut message: ServerMessage) {
+        self.rules = message.model.rules;
+        let rules = &self.rules;
         let sync_delay = if let Some(time) = self.last_sync_time {
             (message.model.current_time - time) / 2.0
         } else {
@@ -162,7 +170,7 @@ impl Model {
         for player in self.players.values_mut() {
             if let Some(upd) = message.model.players.remove(&player.id) {
                 dead_players.remove(&player.id);
-                player.recv(upd, sync_delay);
+                player.recv(upd, sync_delay, rules);
             }
         }
         for player in dead_players {
@@ -176,7 +184,7 @@ impl Model {
         for projectile in self.projectiles.values_mut() {
             if let Some(upd) = message.model.projectiles.remove(&projectile.id) {
                 dead_projectiles.remove(&projectile.id);
-                projectile.recv(upd, sync_delay);
+                projectile.recv(upd, sync_delay, rules);
             }
         }
         for projectile in dead_projectiles {
