@@ -134,7 +134,7 @@ impl Player {
         }
 
         if let Some(ref mut projectile) = self.projectile {
-            let mut dr = self.action.aim - self.entity.pos;
+            let mut dr = rules.normalize_delta(self.action.aim - self.entity.pos);
             if dr.len() > self.entity.size {
                 dr = dr.normalize();
             }
