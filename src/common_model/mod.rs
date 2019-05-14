@@ -26,6 +26,24 @@ impl Entity {
         let mass = self.mass() + delta_mass;
         self.size = mass.max(0.0).sqrt();
     }
+    pub fn collide(a: &mut Self, b: &mut Self, rules: &Rules) {
+        let dist = rules.normalize_delta(a.pos - b.pos).len();
+        if dist < 1e-3 {
+            return;
+        }
+        let penetration = (a.size + b.size) - dist;
+        let penetration = penetration.min(min(a.size, b.size));
+        let n = rules.normalize_delta(b.pos - a.pos).normalize();
+        if penetration > 0.0 {
+            let ka = 1.0 / a.mass();
+            let kb = 1.0 / b.mass();
+            let sum_k = ka + kb;
+            let ka = ka / sum_k;
+            let kb = kb / sum_k;
+            a.pos -= n * penetration * ka;
+            b.pos += n * penetration * kb;
+        }
+    }
     pub fn hit(&mut self, target: &mut Self, k: f32, rules: &Rules) -> bool {
         let penetration =
             (self.size + target.size) - rules.normalize_delta(self.pos - target.pos).len();
@@ -252,6 +270,19 @@ impl Model {
                 }
             }
         }
+        fn iter_pairs<T>(mut v: Vec<&mut T>, mut f: impl FnMut(&mut T, &mut T)) {
+            for i in 1..v.len() {
+                let (head, tail) = v.split_at_mut(i);
+                let first = head.last_mut().unwrap();
+                for second in tail {
+                    f(first, second);
+                }
+            }
+        }
+        iter_pairs(self.players.values_mut().collect(), |p1, p2| {
+            Entity::collide(p1, p2, rules);
+        });
+
         self.players.retain(|_, e| e.alive());
         self.projectiles.retain(|_, e| e.alive());
     }
