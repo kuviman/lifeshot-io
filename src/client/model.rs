@@ -119,7 +119,7 @@ impl Spark {
         Self {
             pos: e.pos,
             size: global_rng().gen_range(e.size / 2.0, e.size),
-            vel: random_circle_point() * Self::MAX_SPEED,
+            vel: distributions::UnitCircleInside.sample(&mut global_rng()) * Self::MAX_SPEED,
             t: 0.0,
         }
     }

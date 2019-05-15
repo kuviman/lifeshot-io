@@ -13,12 +13,6 @@ use common_model::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use server::*;
 
-fn random_circle_point() -> Vec2<f32> {
-    let a = global_rng().gen_range(0.0, 2.0 * std::f32::consts::PI);
-    let r = global_rng().gen_range(0.0, 1.0).sqrt();
-    vec2(r * a.cos(), r * a.sin())
-}
-
 #[derive(structopt::StructOpt, Debug, Clone)]
 pub struct NetOpts {
     #[structopt(long = "host", default_value = "server.lifeshot.io")]
