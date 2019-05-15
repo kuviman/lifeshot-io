@@ -106,9 +106,9 @@ impl geng::App for ClientApp {
                                     0.02,
                                 ),
                             },
-                            vec2(
-                                global_rng().gen_range(-1.0, 1.0),
-                                global_rng().gen_range(-1.0, 1.0),
+                            Vec2::rotated(
+                                vec2(1.0, 0.0),
+                                global_rng().gen_range(0.0, 2.0 * std::f32::consts::PI),
                             ),
                         ));
                     }
