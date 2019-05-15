@@ -229,7 +229,7 @@ impl Projectile {
     const DEATH_SPEED: f32 = 0.1;
     const STRENGTH: f32 = 0.5;
     fn update(&mut self, delta_time: f32, rules: &Rules) {
-        self.size -= Self::DEATH_SPEED * delta_time;
+        self.add_mass(-Self::DEATH_SPEED * delta_time);
         self.entity.update(delta_time, rules);
     }
 }
