@@ -1,8 +1,10 @@
 use crate::*;
 
+mod background;
 mod circle_renderer;
 mod model;
 
+use background::Background;
 use circle_renderer::CircleRenderer;
 use model::*;
 
@@ -10,7 +12,7 @@ pub struct ClientApp {
     context: Rc<geng::Context>,
     client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
-    background: Vec<(circle_renderer::Instance, Vec2<f32>)>,
+    background: Option<Background>,
     action: Arc<Mutex<Action>>,
     camera_pos: Vec2<f32>,
     recv: Arc<Mutex<Option<ServerMessage>>>,
@@ -68,7 +70,7 @@ impl ClientApp {
         );
         Self {
             context: context.clone(),
-            background: Vec::new(),
+            background: None,
             client_player_id: None,
             circle_renderer: CircleRenderer::new(context),
             action,
@@ -89,36 +91,14 @@ impl geng::App for ClientApp {
             if let Some(message) = recv.take() {
                 self.client_player_id = Some(message.client_player_id);
                 self.model.recv(message);
-                if self.background.is_empty() {
-                    for _ in 0..10 {
-                        self.background.push((
-                            circle_renderer::Instance {
-                                i_pos: vec2(
-                                    global_rng().gen_range(0.0, self.model.rules.world_size),
-                                    global_rng().gen_range(0.0, self.model.rules.world_size),
-                                ),
-                                i_size: global_rng()
-                                    .gen_range(Self::CAMERA_FOV / 2.0, Self::CAMERA_FOV),
-                                i_color: Color::rgba(
-                                    global_rng().gen_range(0.0, 1.0),
-                                    global_rng().gen_range(0.0, 1.0),
-                                    global_rng().gen_range(0.0, 1.0),
-                                    0.02,
-                                ),
-                            },
-                            Vec2::rotated(
-                                vec2(1.0, 0.0),
-                                global_rng().gen_range(0.0, 2.0 * std::f32::consts::PI),
-                            ),
-                        ));
-                    }
+                if self.background.is_none() {
+                    self.background = Some(Background::new(&self.model.rules));
                 }
             }
         }
         let rules = &self.model.rules;
-        for (p, vel) in &mut self.background {
-            let vel = *vel;
-            p.i_pos = rules.normalize_pos(p.i_pos + vel * delta_time as f32);
+        if let Some(background) = &mut self.background {
+            background.update(delta_time as f32);
         }
         self.model.update(delta_time as f32);
         {
@@ -183,8 +163,8 @@ impl geng::App for ClientApp {
             mouse_pos
         };
 
-        for (p, _) in &self.background {
-            self.circle_renderer.queue(p.clone());
+        if let Some(background) = &self.background {
+            background.draw(&mut self.circle_renderer);
         }
 
         if player_alive {
