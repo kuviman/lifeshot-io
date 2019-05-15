@@ -133,6 +133,7 @@ impl Spark {
 }
 
 pub struct Player {
+    pub action: Action,
     pub entity: Entity,
     pub projectile: Option<Projectile>,
 }
@@ -153,11 +154,13 @@ impl DerefMut for Player {
 impl Player {
     fn new(p: common_model::Player) -> Self {
         Self {
+            action: p.action,
             entity: Entity::new(p.entity),
             projectile: p.projectile.map(|p| Projectile::new(p)),
         }
     }
     fn recv(&mut self, p: common_model::Player, sync_delay: f32, rules: &Rules) {
+        self.action = p.action.clone();
         self.entity.recv(
             p.entity,
             Some((
@@ -168,6 +171,15 @@ impl Player {
             rules,
         );
         self.projectile = p.projectile.map(|p| Projectile::new(p));
+    }
+    fn update(&mut self, delta_time: f32, rules: &Rules) {
+        if let Some(projectile) = &mut self.projectile {
+            projectile.pos = self.entity.pos
+                + rules
+                    .normalize_delta(self.action.aim - self.entity.pos)
+                    .clamp(self.entity.size);
+        }
+        self.entity.update(delta_time, rules);
     }
 }
 
