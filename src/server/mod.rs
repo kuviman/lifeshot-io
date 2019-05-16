@@ -51,6 +51,11 @@ impl net::server::App for Server {
     type ClientMessage = ClientMessage;
     const TICKS_PER_SECOND: f64 = 60.0;
     fn connect(&mut self, mut sender: Box<net::Sender<ServerMessage>>) -> Client {
+        if let Ok(cmd) = std::env::var("NEW_PLAYER_CMD") {
+            std::process::Command::new(cmd)
+                .spawn()
+                .expect("Failed to run NEW_PLAYER_CMD");
+        }
         let player_id = {
             let mut model = self.model.lock().unwrap();
             let player_id = model.new_player();
