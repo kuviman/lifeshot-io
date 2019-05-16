@@ -66,7 +66,7 @@ impl Entity {
 }
 
 pub struct Projectile {
-    owner_id: Id,
+    pub owner_id: Id,
     entity: Entity,
     next_spark: f32,
 }
@@ -96,11 +96,23 @@ impl Projectile {
     fn recv(&mut self, p: common_model::Projectile, sync_delay: f32, rules: &Rules) {
         self.entity.recv(p.entity, None, sync_delay, rules);
     }
-    fn update_sparks(&mut self, delta_time: f32, sparks: &mut Vec<Spark>) {
+    fn update_sparks(
+        &mut self,
+        client_player_id: Option<Id>,
+        delta_time: f32,
+        sparks: &mut Vec<Spark>,
+    ) {
         self.next_spark -= delta_time * self.entity.mass();
         while self.next_spark < 0.0 {
             self.next_spark += 1.0 / Self::SPARK_FREQ;
-            sparks.push(Spark::new(&self.entity));
+            sparks.push(Spark::new(
+                &self.entity,
+                if Some(self.owner_id) == client_player_id {
+                    Color::rgb(0.5, 0.5, 1.0)
+                } else {
+                    Color::rgb(1.0, 0.5, 0.5)
+                },
+            ));
         }
     }
 }
@@ -109,17 +121,19 @@ pub struct Spark {
     pub pos: Vec2<f32>,
     pub size: f32,
     pub vel: Vec2<f32>,
+    pub color: Color<f32>,
     pub t: f32,
 }
 
 impl Spark {
     pub const TIME: f32 = 0.3;
     const MAX_SPEED: f32 = 5.0;
-    pub fn new(e: &Entity) -> Self {
+    pub fn new(e: &Entity, color: Color<f32>) -> Self {
         Self {
             pos: e.pos,
             size: global_rng().gen_range(e.size / 2.0, e.size),
             vel: distributions::UnitCircleInside.sample(&mut global_rng()) * Self::MAX_SPEED,
+            color,
             t: 0.0,
         }
     }
@@ -210,7 +224,11 @@ impl Player {
             renderer.queue(circle_renderer::Instance {
                 i_pos: projectile.pos,
                 i_size: projectile.size,
-                i_color: Color::WHITE,
+                i_color: if Some(projectile.owner_id) == client_player_id {
+                    Color::rgb(0.5, 0.5, 1.0)
+                } else {
+                    Color::rgb(1.0, 0.5, 0.5)
+                },
             });
         }
     }
@@ -218,6 +236,7 @@ impl Player {
 
 pub struct Model {
     pub last_sync_time: Option<f32>,
+    pub client_player_id: Option<Id>,
     pub rules: Rules,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
@@ -234,6 +253,7 @@ impl Model {
             projectiles: HashMap::new(),
             food: Vec::new(),
             sparks: Vec::new(),
+            client_player_id: None,
         }
     }
     pub fn update(&mut self, delta_time: f32) {
@@ -241,12 +261,12 @@ impl Model {
         for player in self.players.values_mut() {
             player.update(delta_time, rules);
             if let Some(projectile) = &mut player.projectile {
-                projectile.update_sparks(delta_time, &mut self.sparks);
+                projectile.update_sparks(self.client_player_id, delta_time, &mut self.sparks);
             }
         }
         for projectile in self.projectiles.values_mut() {
             projectile.update(delta_time, rules);
-            projectile.update_sparks(delta_time, &mut self.sparks);
+            projectile.update_sparks(self.client_player_id, delta_time, &mut self.sparks);
         }
         for spark in &mut self.sparks {
             spark.update(delta_time);
@@ -254,6 +274,7 @@ impl Model {
         self.sparks.retain(|e| e.alive());
     }
     pub fn recv(&mut self, mut message: ServerMessage) {
+        self.client_player_id = Some(message.client_player_id);
         self.rules = message.model.rules;
         let rules = &self.rules;
         let sync_delay = if let Some(time) = self.last_sync_time {

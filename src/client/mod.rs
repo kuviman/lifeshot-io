@@ -196,7 +196,11 @@ impl geng::App for ClientApp {
             self.circle_renderer.queue(circle_renderer::Instance {
                 i_pos: projectile.pos,
                 i_size: projectile.size,
-                i_color: Color::WHITE,
+                i_color: if Some(projectile.owner_id) == self.client_player_id {
+                    Color::rgb(0.5, 0.5, 1.0)
+                } else {
+                    Color::rgb(1.0, 0.5, 0.5)
+                },
             });
         }
 
@@ -218,7 +222,11 @@ impl geng::App for ClientApp {
         for spark in &self.model.sparks {
             self.circle_renderer.queue(circle_renderer::Instance {
                 i_pos: spark.pos,
-                i_color: Color::rgba(1.0, 1.0, 1.0, (1.0 - spark.t / Spark::TIME) * 0.5),
+                i_color: {
+                    let mut color = spark.color;
+                    color.a = (1.0 - spark.t / Spark::TIME) * 0.5;
+                    color
+                },
                 i_size: spark.size,
             })
         }
