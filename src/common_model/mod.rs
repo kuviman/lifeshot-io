@@ -284,7 +284,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub const MAX_FOOD_EXTRA: f32 = 5.0;
+    pub const MAX_FOOD_EXTRA: f32 = 10.0;
 
     pub fn new_player(&mut self) -> Id {
         Id::new()
