@@ -190,18 +190,7 @@ impl geng::App for ClientApp {
         }
 
         for player in self.model.players.values() {
-            self.circle_renderer.queue(circle_renderer::Instance {
-                i_pos: player.pos,
-                i_size: player.size,
-                i_color: Color::WHITE,
-            });
-            if let Some(ref projectile) = player.projectile {
-                self.circle_renderer.queue(circle_renderer::Instance {
-                    i_pos: projectile.pos,
-                    i_size: projectile.size,
-                    i_color: Color::WHITE,
-                });
-            }
+            player.draw(self.client_player_id, &mut self.circle_renderer);
         }
         for projectile in self.model.projectiles.values() {
             self.circle_renderer.queue(circle_renderer::Instance {

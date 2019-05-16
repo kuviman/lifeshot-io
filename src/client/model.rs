@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 pub struct Entity {
     pub id: Id,
@@ -180,6 +180,20 @@ impl Player {
                     .clamp(self.entity.size);
         }
         self.entity.update(delta_time, rules);
+    }
+    pub fn draw(&self, client_player_id: Option<Id>, renderer: &mut CircleRenderer) {
+        renderer.queue(circle_renderer::Instance {
+            i_pos: self.pos,
+            i_size: self.size,
+            i_color: Color::WHITE,
+        });
+        if let Some(ref projectile) = self.projectile {
+            renderer.queue(circle_renderer::Instance {
+                i_pos: projectile.pos,
+                i_size: projectile.size,
+                i_color: Color::WHITE,
+            });
+        }
     }
 }
 
