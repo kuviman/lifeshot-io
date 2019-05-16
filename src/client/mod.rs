@@ -209,11 +209,9 @@ impl geng::App for ClientApp {
             let max_y = Self::CAMERA_FOV / 2.0;
             let max_x = max_y * framebuffer_size.x / framebuffer_size.y;
             if dv.x.abs() > max_x || dv.y.abs() > max_y {
-                let mut color = Color::WHITE;
-                color.a = 0.5;
                 self.circle_renderer.queue(circle_renderer::Instance {
                     i_pos: self.camera_pos + vec2(clamp_abs(dv.x, max_x), clamp_abs(dv.y, max_y)),
-                    i_color: color,
+                    i_color: Color::rgba(1.0, 0.5, 0.5, 0.5),
                     i_size: player.size,
                 });
             }
