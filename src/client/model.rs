@@ -136,6 +136,7 @@ pub struct Player {
     pub action: Action,
     pub entity: Entity,
     pub projectile: Option<Projectile>,
+    time: f32,
 }
 
 impl Deref for Player {
@@ -157,6 +158,7 @@ impl Player {
             action: p.action,
             entity: Entity::new(p.entity),
             projectile: p.projectile.map(|p| Projectile::new(p)),
+            time: 0.0,
         }
     }
     fn recv(&mut self, p: common_model::Player, sync_delay: f32, rules: &Rules) {
@@ -173,6 +175,7 @@ impl Player {
         self.projectile = p.projectile.map(|p| Projectile::new(p));
     }
     fn update(&mut self, delta_time: f32, rules: &Rules) {
+        self.time += delta_time;
         if let Some(projectile) = &mut self.projectile {
             projectile.pos = self.entity.pos
                 + rules
@@ -185,7 +188,23 @@ impl Player {
         renderer.queue(circle_renderer::Instance {
             i_pos: self.pos,
             i_size: self.size,
-            i_color: Color::WHITE,
+            i_color: if Some(self.id) == client_player_id {
+                Color::BLUE
+            } else {
+                Color::RED
+            },
+        });
+        renderer.queue(circle_renderer::Instance {
+            i_pos: self.pos,
+            i_size: self.size * 0.9,
+            i_color: Color::rgba(1.0, 1.0, 1.0, 0.2),
+        });
+        renderer.queue(circle_renderer::Instance {
+            i_pos: self.pos,
+            i_size: self.size * 0.9 * {
+                ((self.time * 5.0).sin() * 0.5 + 0.5).powf(3.0) * 0.5 + 0.5
+            },
+            i_color: Color::rgba(1.0, 1.0, 1.0, 0.1),
         });
         if let Some(ref projectile) = self.projectile {
             renderer.queue(circle_renderer::Instance {
