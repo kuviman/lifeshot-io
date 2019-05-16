@@ -235,6 +235,32 @@ impl geng::App for ClientApp {
             let font = &self.font;
             let scale = framebuffer_size.y / 20.0;
             let mid = framebuffer_size / 2.0;
+
+            font.draw_aligned(
+                framebuffer,
+                "This is a work in progress",
+                vec2(0.0, 9.0 * scale) + mid,
+                0.5,
+                scale * 0.3,
+                Color::rgb(0.5, 0.5, 0.5),
+            );
+            font.draw_aligned(
+                framebuffer,
+                "You can report bugs and suggest features on the issue tracker",
+                vec2(0.0, 8.7 * scale) + mid,
+                0.5,
+                scale * 0.3,
+                Color::rgb(0.5, 0.5, 0.5),
+            );
+            font.draw_aligned(
+                framebuffer,
+                "(link to the repo in top right corner)",
+                vec2(0.0, 8.4 * scale) + mid,
+                0.5,
+                scale * 0.3,
+                Color::rgb(0.5, 0.5, 0.5),
+            );
+
             font.draw_aligned(
                 framebuffer,
                 "WASD to move",
