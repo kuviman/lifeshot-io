@@ -47,9 +47,7 @@ impl ClientApp {
                 }
                 use net::Sender;
                 if let Some(connection) = self.connection.lock().unwrap().as_mut() {
-                    connection.send(ClientMessage {
-                        action: self.action.lock().unwrap().clone(),
-                    });
+                    connection.send(ClientMessage::Action(self.action.lock().unwrap().clone()));
                 }
             }
         }
@@ -106,9 +104,10 @@ impl geng::App for ClientApp {
             if connection.is_none() && self.connection_promise.ready() {
                 *connection = Some(self.connection_promise.unwrap());
                 use net::Sender;
-                connection.as_mut().unwrap().send(ClientMessage {
-                    action: self.action.lock().unwrap().clone(),
-                });
+                connection
+                    .as_mut()
+                    .unwrap()
+                    .send(ClientMessage::Action(self.action.lock().unwrap().clone()));
             }
         }
         {
@@ -233,5 +232,20 @@ impl geng::App for ClientApp {
         }
 
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
+    }
+    fn handle_event(&mut self, event: geng::Event) {
+        match event {
+            geng::Event::KeyDown { key } => match key {
+                geng::Key::R => {
+                    let mut connection = self.connection.lock().unwrap();
+                    if let Some(connection) = connection.deref_mut() {
+                        use net::Sender;
+                        connection.send(ClientMessage::Spawn);
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
     }
 }

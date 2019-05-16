@@ -18,12 +18,18 @@ impl Drop for Client {
 
 impl net::Receiver<ClientMessage> for Client {
     fn handle(&mut self, message: ClientMessage) {
+        let reply = match message {
+            ClientMessage::Action(_) => true,
+            _ => false,
+        };
         let mut model = self.model.lock().unwrap();
         model.handle(self.player_id, message);
-        self.sender.send(ServerMessage {
-            client_player_id: self.player_id,
-            model: model.clone(),
-        });
+        if reply {
+            self.sender.send(ServerMessage {
+                client_player_id: self.player_id,
+                model: model.clone(),
+            });
+        }
     }
 }
 

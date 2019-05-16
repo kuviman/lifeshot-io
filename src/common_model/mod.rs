@@ -117,12 +117,12 @@ impl Player {
     pub const PROJECTILE_MASS_GAIN_SPEED: f32 = 0.3;
     pub const PROJECTILE_COST_SPEED: f32 = 0.1;
     pub const DEATH_SPEED: f32 = 1.0 / 20.0;
-    pub fn new() -> Self {
+    pub fn new(id: Id, pos: Vec2<f32>) -> Self {
         Self {
             projectile: None,
             entity: Entity {
-                id: Id::new(),
-                pos: vec2(0.0, 0.0),
+                id,
+                pos,
                 vel: vec2(0.0, 0.0),
                 size: Self::INITIAL_SIZE,
             },
@@ -287,10 +287,7 @@ impl Model {
     pub const MAX_FOOD_EXTRA: f32 = 5.0;
 
     pub fn new_player(&mut self) -> Id {
-        let player = Player::new();
-        let player_id = player.id;
-        self.players.insert(player_id, player);
-        player_id
+        Id::new()
     }
     pub fn update(&mut self, delta_time: f32) {
         let rules = &self.rules;
@@ -364,8 +361,26 @@ impl Model {
         self.food.retain(|e| e.alive());
     }
     pub fn handle(&mut self, player_id: Id, message: ClientMessage) {
-        if let Some(player) = self.players.get_mut(&player_id) {
-            player.action = message.action;
+        match message {
+            ClientMessage::Action(action) => {
+                if let Some(player) = self.players.get_mut(&player_id) {
+                    player.action = action;
+                }
+            }
+            ClientMessage::Spawn => {
+                if !self.players.contains_key(&player_id) {
+                    self.players.insert(
+                        player_id,
+                        Player::new(
+                            player_id,
+                            vec2(
+                                global_rng().gen_range(0.0, self.rules.world_size),
+                                global_rng().gen_range(0.0, self.rules.world_size),
+                            ),
+                        ),
+                    );
+                }
+            }
         }
     }
 }
@@ -391,8 +406,9 @@ pub struct ServerMessage {
 impl net::Message for ServerMessage {}
 
 #[derive(Serialize, Deserialize)]
-pub struct ClientMessage {
-    pub action: Action,
+pub enum ClientMessage {
+    Action(Action),
+    Spawn,
 }
 
 impl net::Message for ClientMessage {}
