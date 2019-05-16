@@ -284,6 +284,9 @@ impl geng::App for ClientApp {
                         connection.send(ClientMessage::Spawn);
                     }
                 }
+                geng::Key::F => {
+                    self.context.window().toggle_fullscreen();
+                }
                 _ => {}
             },
             _ => {}
