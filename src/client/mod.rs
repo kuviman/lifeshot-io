@@ -20,6 +20,7 @@ pub struct ClientApp {
     mouse_pos: Vec2<f32>,
     connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
     connection_promise: Box<Promise<Output = net::client::Connection<ClientMessage>>>,
+    font: geng::Font,
 }
 
 impl ClientApp {
@@ -78,6 +79,8 @@ impl ClientApp {
             connection,
             mouse_pos: vec2(0.0, 0.0),
             connection_promise: Box::new(connection_promise),
+            font: geng::Font::new(context, include_bytes!("Simply Rounded Bold.ttf").to_vec())
+                .unwrap(),
         }
     }
 }
@@ -232,6 +235,44 @@ impl geng::App for ClientApp {
         }
 
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
+
+        if !player_alive {
+            let font = &self.font;
+            let scale = framebuffer_size.y / 20.0;
+            let mid = framebuffer_size / 2.0;
+            font.draw_aligned(
+                framebuffer,
+                "WASD to move",
+                vec2(0.0, 5.0 * scale) + mid,
+                0.5,
+                scale * 2.0,
+                Color::rgb(0.5, 0.5, 0.5),
+            );
+            font.draw_aligned(
+                framebuffer,
+                "LMB to shoot",
+                vec2(0.0, 3.0 * scale) + mid,
+                0.5,
+                scale * 2.0,
+                Color::rgb(0.5, 0.5, 0.5),
+            );
+            font.draw_aligned(
+                framebuffer,
+                "F to toggle fullscreen",
+                vec2(0.0, 2.0 * scale) + mid,
+                0.5,
+                scale,
+                Color::rgb(0.5, 0.5, 0.5),
+            );
+            font.draw_aligned(
+                framebuffer,
+                "Press R to spawn",
+                vec2(0.0, -4.0 * scale) + mid,
+                0.5,
+                scale * 2.0,
+                Color::rgb(1.0, 1.0, 1.0),
+            );
+        }
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
