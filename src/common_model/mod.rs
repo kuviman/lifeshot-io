@@ -113,6 +113,7 @@ impl DerefMut for Player {
 impl Player {
     pub const INITIAL_SIZE: f32 = 1.0;
     pub const MAX_SPEED: f32 = 8.0;
+    pub const MAX_AIMING_SPEED: f32 = 4.0;
     pub const ACCELERATION: f32 = 15.0;
     pub const PROJECTILE_MASS_GAIN_SPEED: f32 = 0.3;
     pub const PROJECTILE_COST_SPEED: f32 = 0.1;
@@ -132,8 +133,11 @@ impl Player {
     fn update(&mut self, delta_time: f32, rules: &Rules) -> Option<Projectile> {
         self.add_mass(-Self::DEATH_SPEED * delta_time);
 
-        self.entity.vel += (self.action.target_vel.clamp(1.0) * Self::MAX_SPEED - self.entity.vel)
-            .clamp(Self::ACCELERATION * delta_time);
+        let mut target_vel = self.action.target_vel.clamp(1.0) * Self::MAX_SPEED;
+        if self.action.shoot {
+            target_vel = target_vel.clamp(Self::MAX_AIMING_SPEED);
+        }
+        self.entity.vel += (target_vel - self.entity.vel).clamp(Self::ACCELERATION * delta_time);
         self.entity.update(delta_time, rules);
 
         if self.action.shoot {

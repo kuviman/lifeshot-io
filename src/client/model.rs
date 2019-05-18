@@ -180,7 +180,14 @@ impl Player {
         self.entity.recv(
             p.entity,
             Some((
-                p.action.target_vel.clamp(1.0) * common_model::Player::MAX_SPEED,
+                {
+                    let mut target_vel =
+                        p.action.target_vel.clamp(1.0) * common_model::Player::MAX_SPEED;
+                    if self.action.shoot {
+                        target_vel = target_vel.clamp(common_model::Player::MAX_AIMING_SPEED);
+                    }
+                    target_vel
+                },
                 common_model::Player::ACCELERATION,
             )),
             sync_delay,
