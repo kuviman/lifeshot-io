@@ -11,6 +11,10 @@ net = { path = "net" }
 structopt = "*"
 log = "*"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+stdweb = "*"
+url = "*"
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ctrlc = "*"
 env_logger = "*"
