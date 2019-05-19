@@ -288,12 +288,16 @@ pub struct Model {
 }
 
 impl Model {
+    pub const TICKS_PER_SECOND: f64 = 60.0;
     pub const MAX_FOOD_EXTRA: f32 = 10.0;
 
     pub fn new_player(&mut self) -> Id {
         Id::new()
     }
-    pub fn update(&mut self, delta_time: f32) {
+    pub fn tick(&mut self) {
+        self.update(1.0 / Self::TICKS_PER_SECOND as f32);
+    }
+    fn update(&mut self, delta_time: f32) {
         let rules = &self.rules;
         self.current_time += delta_time;
         for player in self.players.values_mut() {

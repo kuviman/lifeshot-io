@@ -73,10 +73,7 @@ fn main() {
     let server = None::<()>;
     #[cfg(not(target_arch = "wasm32"))]
     let (server, server_handle) = if opts.command.is_some() {
-        let server = net::Server::new(
-            Server::new(),
-            (opts.net_opts.host.as_str(), opts.net_opts.port),
-        );
+        let server = Server::new(&opts.net_opts);
         let server_handle = server.handle();
         ctrlc::set_handler({
             let server_handle = server_handle.clone();

@@ -5,8 +5,6 @@ pub trait App: Send + 'static {
     type ServerMessage: Message;
     type ClientMessage: Message;
     fn connect(&mut self, sender: Box<Sender<Self::ServerMessage>>) -> Self::Client;
-    const TICKS_PER_SECOND: f64;
-    fn tick(&mut self);
 }
 
 struct Handler<T: App> {
@@ -63,7 +61,6 @@ impl<T: App> ws::Factory for Factory<T> {
 
 pub struct Server<T: App> {
     ws: ws::WebSocket<Factory<T>>,
-    app: Arc<Mutex<T>>,
 }
 
 #[derive(Clone)]
@@ -80,7 +77,6 @@ impl ServerHandle {
 impl<T: App> Server<T> {
     pub fn new(app: T, addr: impl std::net::ToSocketAddrs + Debug + Copy) -> Self {
         let factory = Factory::new(app);
-        let app = factory.app.clone();
         let ws = ws::WebSocket::new(factory).unwrap();
         let ws = match ws.bind(addr) {
             Ok(ws) => ws,
@@ -89,7 +85,7 @@ impl<T: App> Server<T> {
                 panic!("{:?}", e);
             }
         };
-        Self { ws, app }
+        Self { ws }
     }
     pub fn handle(&self) -> ServerHandle {
         ServerHandle {
@@ -98,21 +94,6 @@ impl<T: App> Server<T> {
     }
     pub fn run(self) {
         info!("Starting the server");
-        let running = Arc::new(std::sync::atomic::AtomicBool::new(true));
-        let server_thread = std::thread::spawn({
-            let app = self.app;
-            let running = running.clone();
-            move || {
-                while running.load(std::sync::atomic::Ordering::Relaxed) {
-                    // TODO: smoother TPS
-                    std::thread::sleep(std::time::Duration::from_millis(
-                        (1000.0 / T::TICKS_PER_SECOND) as u64,
-                    ));
-                    let mut app = app.lock().unwrap();
-                    app.tick();
-                }
-            }
-        });
         match self.ws.run() {
             Ok(_) => {
                 info!("Server finished successfully");
@@ -122,7 +103,5 @@ impl<T: App> Server<T> {
                 panic!("{:?}", e);
             }
         }
-        running.store(false, std::sync::atomic::Ordering::Relaxed);
-        server_thread.join().expect("Failed to join server thread");
     }
 }
