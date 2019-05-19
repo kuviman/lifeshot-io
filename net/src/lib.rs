@@ -19,7 +19,7 @@ pub mod server;
 #[cfg(not(target_arch = "wasm32"))]
 pub use server::{Server, ServerHandle};
 
-pub trait Message: Serialize + for<'de> Deserialize<'de> + Send + 'static {}
+pub trait Message: Debug + Serialize + for<'de> Deserialize<'de> + Send + 'static {}
 
 fn serialize_message<T: Message>(message: T) -> Vec<u8> {
     serde_json::to_vec(&message).unwrap()

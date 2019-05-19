@@ -409,7 +409,7 @@ pub struct ServerMessage {
 
 impl net::Message for ServerMessage {}
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMessage {
     Action(Action),
     Spawn,

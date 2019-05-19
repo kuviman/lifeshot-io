@@ -1,31 +1,43 @@
 use crate::*;
 
-pub struct Connection<T> {
+pub struct Connection<S: Message, C: Message> {
     sender: ws::Sender,
     broadcaster: ws::Sender,
-    phantom_data: PhantomData<T>,
+    recv: std::sync::mpsc::Receiver<S>,
     thread_handle: Option<std::thread::JoinHandle<()>>,
+    phantom_data: PhantomData<(S, C)>,
 }
 
-impl<T: Message> Sender<T> for Connection<T> {
-    fn send(&mut self, message: T) {
+impl<S: Message, C: Message> Connection<S, C> {
+    pub fn try_recv(&mut self) -> Option<S> {
+        match self.recv.try_recv() {
+            Ok(message) => Some(message),
+            Err(std::sync::mpsc::TryRecvError::Empty) => None,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => panic!("Disconnected from server"),
+        }
+    }
+}
+
+impl<S: Message, C: Message> Sender<C> for Connection<S, C> {
+    fn send(&mut self, message: C) {
+        trace!("Sending message to server: {:?}", message);
         self.sender
             .send(ws::Message::Binary(serialize_message(message)))
             .expect("Failed to send message");
     }
 }
 
-impl<T> Drop for Connection<T> {
+impl<S: Message, C: Message> Drop for Connection<S, C> {
     fn drop(&mut self) {
         self.broadcaster.shutdown().unwrap();
         self.thread_handle.take().unwrap().join().unwrap();
     }
 }
 
-struct Handler<T> {
+struct Handler<T: Message> {
     promise_handle: Option<promise::ChannelHandle<ws::Sender>>,
-    sender: Option<ws::Sender>,
-    receiver: Box<Receiver<T> + Send>,
+    recv_sender: std::sync::mpsc::Sender<T>,
+    sender: ws::Sender,
 }
 
 impl<T: Message> ws::Handler for Handler<T> {
@@ -34,28 +46,29 @@ impl<T: Message> ws::Handler for Handler<T> {
         self.promise_handle
             .take()
             .unwrap()
-            .ready(self.sender.take().unwrap());
+            .ready(self.sender.clone());
         Ok(())
     }
     fn on_message(&mut self, message: ws::Message) -> ws::Result<()> {
         let message = deserialize_message(&message.into_data());
-        self.receiver.handle(message);
+        trace!("Got message from server: {:?}", message);
+        self.recv_sender.send(message).unwrap();
         Ok(())
     }
 }
 
-struct Factory<S> {
+struct Factory<T: Message> {
     promise_handle: Option<promise::ChannelHandle<ws::Sender>>,
-    receiver: Option<Box<Receiver<S> + Send>>,
+    recv_sender: Option<std::sync::mpsc::Sender<T>>,
 }
 
-impl<S: Message> ws::Factory for Factory<S> {
-    type Handler = Handler<S>;
-    fn connection_made(&mut self, sender: ws::Sender) -> Handler<S> {
+impl<T: Message> ws::Factory for Factory<T> {
+    type Handler = Handler<T>;
+    fn connection_made(&mut self, sender: ws::Sender) -> Handler<T> {
         Handler {
             promise_handle: self.promise_handle.take(),
-            sender: Some(sender),
-            receiver: self.receiver.take().unwrap(),
+            recv_sender: self.recv_sender.take().unwrap(),
+            sender,
         }
     }
 }
@@ -63,12 +76,12 @@ impl<S: Message> ws::Factory for Factory<S> {
 pub fn connect<S: Message, C: Message>(
     host: &str,
     port: u16,
-    receiver: impl Receiver<S> + Send + 'static,
-) -> impl Promise<Output = Connection<C>> {
+) -> impl Promise<Output = Connection<S, C>> {
     let (promise, promise_handle) = promise::channel();
+    let (recv_sender, recv) = std::sync::mpsc::channel();
     let factory = Factory {
         promise_handle: Some(promise_handle),
-        receiver: Some(Box::new(receiver)),
+        recv_sender: Some(recv_sender),
     };
     let mut ws = ws::WebSocket::new(factory).unwrap();
     let mut broadcaster = Some(ws.broadcaster());
@@ -77,10 +90,12 @@ pub fn connect<S: Message, C: Message>(
     let mut thread_handle = Some(std::thread::spawn(move || {
         ws.run().unwrap();
     }));
+    let mut recv = Some(recv);
     promise.map(move |sender| Connection {
         sender,
         broadcaster: broadcaster.take().unwrap(),
-        phantom_data: PhantomData,
+        recv: recv.take().unwrap(),
         thread_handle: thread_handle.take(),
+        phantom_data: PhantomData,
     })
 }

@@ -26,10 +26,12 @@ impl<T: App> ws::Handler for Handler<T> {
         Ok(())
     }
     fn on_message(&mut self, message: ws::Message) -> ws::Result<()> {
+        let message = deserialize_message(&message.into_data());
+        trace!("Received message from client: {:?}", message);
         self.client
             .as_mut()
             .expect("Received a message before handshake")
-            .handle(deserialize_message(&message.into_data()));
+            .handle(message);
         Ok(())
     }
 }

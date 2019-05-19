@@ -18,8 +18,9 @@ pub struct ClientApp {
     recv: Arc<Mutex<Option<ServerMessage>>>,
     model: Model,
     mouse_pos: Vec2<f32>,
-    connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
-    connection_promise: Box<Promise<Output = net::client::Connection<ClientMessage>>>,
+    connection: Arc<Mutex<Option<net::client::Connection<ServerMessage, ClientMessage>>>>,
+    connection_promise:
+        Box<Promise<Output = net::client::Connection<ServerMessage, ClientMessage>>>,
     font: geng::Font,
 }
 
@@ -27,46 +28,10 @@ impl ClientApp {
     const CAMERA_FOV: f32 = 30.0;
 
     pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
-        struct Receiver {
-            recv: Arc<Mutex<Option<ServerMessage>>>,
-            net_delay: Option<u64>,
-            action: Arc<Mutex<Action>>,
-            connection: Arc<Mutex<Option<net::client::Connection<ClientMessage>>>>,
-            timer: Timer,
-            max_ping: f64,
-        }
-        impl net::Receiver<ServerMessage> for Receiver {
-            fn handle(&mut self, message: ServerMessage) {
-                if let Some(delay) = self.net_delay {
-                    std::thread::sleep(std::time::Duration::from_millis(delay));
-                }
-                *self.recv.lock().unwrap() = Some(message);
-                let p = self.timer.tick();
-                if p > self.max_ping {
-                    self.max_ping = p;
-                    debug!("New max ping: {} ms", (p * 1000.0) as u64);
-                }
-                use net::Sender;
-                if let Some(connection) = self.connection.lock().unwrap().as_mut() {
-                    connection.send(ClientMessage::Action(self.action.lock().unwrap().clone()));
-                }
-            }
-        }
         let recv = Arc::new(Mutex::new(None));
         let action = Arc::new(Mutex::new(default()));
         let connection = Arc::new(Mutex::new(None));
-        let connection_promise = net::client::connect(
-            &net_opts.host,
-            net_opts.port,
-            Receiver {
-                net_delay: net_opts.extra_delay,
-                action: action.clone(),
-                recv: recv.clone(),
-                connection: connection.clone(),
-                timer: Timer::new(),
-                max_ping: 0.0,
-            },
-        );
+        let connection_promise = net::client::connect(&net_opts.host, net_opts.port);
         Self {
             context: context.clone(),
             background: None,
@@ -88,12 +53,20 @@ impl ClientApp {
 impl geng::App for ClientApp {
     fn update(&mut self, delta_time: f64) {
         {
-            let mut recv = self.recv.lock().unwrap();
-            if let Some(message) = recv.take() {
-                self.client_player_id = Some(message.client_player_id);
-                self.model.recv(message);
-                if self.background.is_none() {
-                    self.background = Some(Background::new(&self.model.rules));
+            let mut connection = self.connection.lock().unwrap();
+            if let Some(connection) = connection.deref_mut() {
+                let mut got = false;
+                while let Some(message) = connection.try_recv() {
+                    got = true;
+                    self.client_player_id = Some(message.client_player_id);
+                    self.model.recv(message);
+                    if self.background.is_none() {
+                        self.background = Some(Background::new(&self.model.rules));
+                    }
+                }
+                if got {
+                    use net::Sender;
+                    connection.send(ClientMessage::Action(self.action.lock().unwrap().clone()));
                 }
             }
         }
