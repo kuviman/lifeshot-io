@@ -65,7 +65,6 @@ impl geng::App for ClientApp {
                     }
                 }
                 if got {
-                    use net::Sender;
                     connection.send(ClientMessage::Action(self.action.lock().unwrap().clone()));
                 }
             }
@@ -79,7 +78,6 @@ impl geng::App for ClientApp {
             let mut connection = self.connection.lock().unwrap();
             if connection.is_none() && self.connection_promise.ready() {
                 *connection = Some(self.connection_promise.unwrap());
-                use net::Sender;
                 connection
                     .as_mut()
                     .unwrap()
@@ -274,7 +272,6 @@ impl geng::App for ClientApp {
                 geng::Key::R => {
                     let mut connection = self.connection.lock().unwrap();
                     if let Some(connection) = connection.deref_mut() {
-                        use net::Sender;
                         connection.send(ClientMessage::Spawn);
                     }
                 }

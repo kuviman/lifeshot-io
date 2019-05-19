@@ -13,6 +13,9 @@ pub struct Connection<S: Message, C: Message> {
 }
 
 impl<S: Message, C: Message> Connection<S, C> {
+    pub fn send(&mut self, message: C) {
+        self.inner.send(message);
+    }
     pub fn try_recv(&mut self) -> Option<S> {
         self.inner.try_recv()
     }
@@ -34,7 +37,7 @@ impl<'a, S: Message, C: Message> Iterator for NewMessages<'a, S, C> {
 
 impl<S: Message, C: Message> Sender<C> for Connection<S, C> {
     fn send(&mut self, message: C) {
-        self.inner.send(message);
+        self.send(message);
     }
 }
 

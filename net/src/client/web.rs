@@ -14,10 +14,7 @@ impl<S: Message, C: Message> Connection<S, C> {
             Err(std::sync::mpsc::TryRecvError::Disconnected) => panic!("Disconnected from server"),
         }
     }
-}
-
-impl<S: Message, C: Message> Sender<C> for Connection<S, C> {
-    fn send(&mut self, message: C) {
+    pub fn send(&mut self, message: C) {
         self.ws
             .send_bytes(&serialize_message(message))
             .expect("Failed to send message");
