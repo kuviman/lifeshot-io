@@ -9,45 +9,58 @@ pub trait App: Send + 'static {
     fn tick(&mut self);
 }
 
-struct Handler<T, P> {
-    client: T,
-    phantom_data: PhantomData<P>,
+struct Handler<T: App> {
+    app: Arc<Mutex<T>>,
+    sender: ws::Sender,
+    client: Option<T::Client>,
 }
 
-impl<M: Message, T: Receiver<M>> ws::Handler for Handler<T, M> {
+impl<T: App> ws::Handler for Handler<T> {
+    fn on_open(&mut self, _: ws::Handshake) -> ws::Result<()> {
+        self.client = Some(
+            self.app
+                .lock()
+                .unwrap()
+                .connect(Box::new(self.sender.clone())),
+        );
+        Ok(())
+    }
     fn on_message(&mut self, message: ws::Message) -> ws::Result<()> {
         self.client
+            .as_mut()
+            .expect("Received a message before handshake")
             .handle(deserialize_message(&message.into_data()));
         Ok(())
     }
 }
 
-struct Factory<T> {
-    app: T,
+struct Factory<T: App> {
+    app: Arc<Mutex<T>>,
 }
 
-impl<T> Factory<T> {
+impl<T: App> Factory<T> {
     fn new(app: T) -> Self {
-        Self { app }
+        Self {
+            app: Arc::new(Mutex::new(app)),
+        }
     }
 }
 
-impl<T: App> ws::Factory for Factory<Arc<Mutex<T>>> {
-    type Handler = Handler<T::Client, T::ClientMessage>;
+impl<T: App> ws::Factory for Factory<T> {
+    type Handler = Handler<T>;
 
-    fn connection_made(&mut self, sender: ws::Sender) -> Handler<T::Client, T::ClientMessage> {
+    fn connection_made(&mut self, sender: ws::Sender) -> Handler<T> {
         info!("New connection");
-        let mut app = self.app.lock().unwrap();
-        let client = app.connect(Box::new(sender));
         Handler {
-            client,
-            phantom_data: PhantomData,
+            app: self.app.clone(),
+            sender,
+            client: None,
         }
     }
 }
 
 pub struct Server<T: App> {
-    ws: ws::WebSocket<Factory<Arc<Mutex<T>>>>,
+    ws: ws::WebSocket<Factory<T>>,
     app: Arc<Mutex<T>>,
 }
 
@@ -64,8 +77,8 @@ impl ServerHandle {
 
 impl<T: App> Server<T> {
     pub fn new(app: T, addr: impl std::net::ToSocketAddrs + Debug + Copy) -> Self {
-        let app = Arc::new(Mutex::new(app));
-        let factory = Factory::new(app.clone());
+        let factory = Factory::new(app);
+        let app = factory.app.clone();
         let ws = ws::WebSocket::new(factory).unwrap();
         let ws = match ws.bind(addr) {
             Ok(ws) => ws,
