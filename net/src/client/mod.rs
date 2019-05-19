@@ -16,6 +16,20 @@ impl<S: Message, C: Message> Connection<S, C> {
     pub fn try_recv(&mut self) -> Option<S> {
         self.inner.try_recv()
     }
+    pub fn new_messages(&mut self) -> NewMessages<S, C> {
+        NewMessages { connection: self }
+    }
+}
+
+pub struct NewMessages<'a, S: Message, C: Message> {
+    connection: &'a mut Connection<S, C>,
+}
+
+impl<'a, S: Message, C: Message> Iterator for NewMessages<'a, S, C> {
+    type Item = S;
+    fn next(&mut self) -> Option<S> {
+        self.connection.try_recv()
+    }
 }
 
 impl<S: Message, C: Message> Sender<C> for Connection<S, C> {

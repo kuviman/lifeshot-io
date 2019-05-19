@@ -56,7 +56,7 @@ impl geng::App for ClientApp {
             let mut connection = self.connection.lock().unwrap();
             if let Some(connection) = connection.deref_mut() {
                 let mut got = false;
-                while let Some(message) = connection.try_recv() {
+                for message in connection.new_messages() {
                     got = true;
                     self.client_player_id = Some(message.client_player_id);
                     self.model.recv(message);
