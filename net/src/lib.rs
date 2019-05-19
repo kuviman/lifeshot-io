@@ -15,6 +15,8 @@ pub use server::{Server, ServerHandle};
 
 pub trait Message: Debug + Serialize + for<'de> Deserialize<'de> + Send + 'static {}
 
+impl<T: Debug + Serialize + for<'de> Deserialize<'de> + Send + 'static> Message for T {}
+
 fn serialize_message<T: Message>(message: T) -> Vec<u8> {
     serde_json::to_vec(&message).unwrap()
 }

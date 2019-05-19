@@ -407,12 +407,8 @@ pub struct ServerMessage {
     pub client_player_id: Id,
 }
 
-impl net::Message for ServerMessage {}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMessage {
     Action(Action),
     Spawn,
 }
-
-impl net::Message for ClientMessage {}
