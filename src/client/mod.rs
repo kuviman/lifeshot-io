@@ -73,7 +73,6 @@ struct ClientPlayApp {
     background: Option<Background>,
     action: Arc<Mutex<Action>>,
     camera_pos: Vec2<f32>,
-    recv: Arc<Mutex<Option<ServerMessage>>>,
     model: Model,
     mouse_pos: Vec2<f32>,
     connection: net::client::Connection<ServerMessage, ClientMessage>,
@@ -87,7 +86,6 @@ impl ClientPlayApp {
         context: &Rc<geng::Context>,
         mut connection: net::client::Connection<ServerMessage, ClientMessage>,
     ) -> Self {
-        let recv = Arc::new(Mutex::new(None));
         let action = Arc::new(Mutex::new(default::<Action>()));
         connection.send(ClientMessage::Action(action.lock().unwrap().clone()));
         Self {
@@ -97,7 +95,6 @@ impl ClientPlayApp {
             circle_renderer: CircleRenderer::new(context),
             action,
             camera_pos: vec2(0.0, 0.0),
-            recv,
             model: Model::new(),
             connection,
             mouse_pos: vec2(0.0, 0.0),
