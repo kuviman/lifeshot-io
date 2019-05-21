@@ -71,7 +71,7 @@ struct ClientPlayApp {
     client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
     background: Option<Background>,
-    action: Arc<Mutex<Action>>,
+    action: Action,
     camera_pos: Vec2<f32>,
     model: Model,
     mouse_pos: Vec2<f32>,
@@ -86,8 +86,8 @@ impl ClientPlayApp {
         context: &Rc<geng::Context>,
         mut connection: net::client::Connection<ServerMessage, ClientMessage>,
     ) -> Self {
-        let action = Arc::new(Mutex::new(default::<Action>()));
-        connection.send(ClientMessage::Action(action.lock().unwrap().clone()));
+        let action = Action::default();
+        connection.send(ClientMessage::Action(action.clone()));
         Self {
             context: context.clone(),
             background: None,
@@ -118,7 +118,7 @@ impl geng::App for ClientPlayApp {
             }
             if got {
                 self.connection
-                    .send(ClientMessage::Action(self.action.lock().unwrap().clone()));
+                    .send(ClientMessage::Action(self.action.clone()));
             }
         }
         let rules = &self.model.rules;
@@ -127,7 +127,7 @@ impl geng::App for ClientPlayApp {
         }
         self.model.update(delta_time as f32);
         {
-            let mut action = self.action.lock().unwrap();
+            let mut action = &mut self.action;
             action.target_vel = vec2(0.0, 0.0);
             if self.context.window().is_key_pressed(geng::Key::W) {
                 action.target_vel.y += 1.0;
