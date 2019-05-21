@@ -21,7 +21,8 @@ impl Background {
                     global_rng().gen_range(0.0, rules.world_size),
                     global_rng().gen_range(0.0, rules.world_size),
                 ),
-                size: global_rng().gen_range(ClientApp::CAMERA_FOV / 2.0, ClientApp::CAMERA_FOV),
+                size: global_rng()
+                    .gen_range(ClientPlayApp::CAMERA_FOV / 2.0, ClientPlayApp::CAMERA_FOV),
                 color: Color::rgba(
                     global_rng().gen_range(0.0, 1.0),
                     global_rng().gen_range(0.0, 1.0),

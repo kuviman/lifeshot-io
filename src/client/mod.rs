@@ -8,7 +8,65 @@ use background::Background;
 use circle_renderer::CircleRenderer;
 use model::*;
 
+enum ClientAppState {
+    Connecting(Box<Promise<Output = net::client::Connection<ServerMessage, ClientMessage>>>),
+    Playing(ClientPlayApp),
+}
+
 pub struct ClientApp {
+    context: Rc<geng::Context>,
+    state: Option<ClientAppState>,
+}
+
+impl ClientApp {
+    pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
+        Self {
+            context: context.clone(),
+            state: Some(ClientAppState::Connecting(Box::new(net::client::connect(
+                &net_opts.host,
+                net_opts.port,
+            )))),
+        }
+    }
+}
+
+impl geng::App for ClientApp {
+    fn update(&mut self, delta_time: f64) {
+        match self.state.as_mut().unwrap() {
+            ClientAppState::Connecting(promise) => {
+                if promise.ready() {
+                    let connection = promise.unwrap();
+                    self.state
+                        .replace(ClientAppState::Playing(ClientPlayApp::new(
+                            &self.context,
+                            connection,
+                        )));
+                }
+            }
+            ClientAppState::Playing(app) => {
+                app.update(delta_time);
+            }
+        }
+    }
+    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
+        match self.state.as_mut().unwrap() {
+            ClientAppState::Connecting(_) => {}
+            ClientAppState::Playing(app) => {
+                app.draw(framebuffer);
+            }
+        }
+    }
+    fn handle_event(&mut self, event: geng::Event) {
+        match self.state.as_mut().unwrap() {
+            ClientAppState::Connecting(_) => {}
+            ClientAppState::Playing(app) => {
+                app.handle_event(event);
+            }
+        }
+    }
+}
+
+struct ClientPlayApp {
     context: Rc<geng::Context>,
     client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
@@ -18,20 +76,20 @@ pub struct ClientApp {
     recv: Arc<Mutex<Option<ServerMessage>>>,
     model: Model,
     mouse_pos: Vec2<f32>,
-    connection: Arc<Mutex<Option<net::client::Connection<ServerMessage, ClientMessage>>>>,
-    connection_promise:
-        Box<Promise<Output = net::client::Connection<ServerMessage, ClientMessage>>>,
+    connection: net::client::Connection<ServerMessage, ClientMessage>,
     font: geng::Font,
 }
 
-impl ClientApp {
+impl ClientPlayApp {
     const CAMERA_FOV: f32 = 30.0;
 
-    pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
+    pub fn new(
+        context: &Rc<geng::Context>,
+        mut connection: net::client::Connection<ServerMessage, ClientMessage>,
+    ) -> Self {
         let recv = Arc::new(Mutex::new(None));
-        let action = Arc::new(Mutex::new(default()));
-        let connection = Arc::new(Mutex::new(None));
-        let connection_promise = net::client::connect(&net_opts.host, net_opts.port);
+        let action = Arc::new(Mutex::new(default::<Action>()));
+        connection.send(ClientMessage::Action(action.lock().unwrap().clone()));
         Self {
             context: context.clone(),
             background: None,
@@ -43,30 +101,27 @@ impl ClientApp {
             model: Model::new(),
             connection,
             mouse_pos: vec2(0.0, 0.0),
-            connection_promise: Box::new(connection_promise),
             font: geng::Font::new(context, include_bytes!("Simply Rounded Bold.ttf").to_vec())
                 .unwrap(),
         }
     }
 }
 
-impl geng::App for ClientApp {
+impl geng::App for ClientPlayApp {
     fn update(&mut self, delta_time: f64) {
         {
-            let mut connection = self.connection.lock().unwrap();
-            if let Some(connection) = connection.deref_mut() {
-                let mut got = false;
-                for message in connection.new_messages() {
-                    got = true;
-                    self.client_player_id = Some(message.client_player_id);
-                    self.model.recv(message);
-                    if self.background.is_none() {
-                        self.background = Some(Background::new(&self.model.rules));
-                    }
+            let mut got = false;
+            for message in self.connection.new_messages() {
+                got = true;
+                self.client_player_id = Some(message.client_player_id);
+                self.model.recv(message);
+                if self.background.is_none() {
+                    self.background = Some(Background::new(&self.model.rules));
                 }
-                if got {
-                    connection.send(ClientMessage::Action(self.action.lock().unwrap().clone()));
-                }
+            }
+            if got {
+                self.connection
+                    .send(ClientMessage::Action(self.action.lock().unwrap().clone()));
             }
         }
         let rules = &self.model.rules;
@@ -74,16 +129,6 @@ impl geng::App for ClientApp {
             background.update(delta_time as f32);
         }
         self.model.update(delta_time as f32);
-        {
-            let mut connection = self.connection.lock().unwrap();
-            if connection.is_none() && self.connection_promise.ready() {
-                *connection = Some(self.connection_promise.unwrap());
-                connection
-                    .as_mut()
-                    .unwrap()
-                    .send(ClientMessage::Action(self.action.lock().unwrap().clone()));
-            }
-        }
         {
             let mut action = self.action.lock().unwrap();
             action.target_vel = vec2(0.0, 0.0);
@@ -270,10 +315,7 @@ impl geng::App for ClientApp {
         match event {
             geng::Event::KeyDown { key } => match key {
                 geng::Key::R => {
-                    let mut connection = self.connection.lock().unwrap();
-                    if let Some(connection) = connection.deref_mut() {
-                        connection.send(ClientMessage::Spawn);
-                    }
+                    self.connection.send(ClientMessage::Spawn);
                 }
                 geng::Key::F => {
                     self.context.window().toggle_fullscreen();
