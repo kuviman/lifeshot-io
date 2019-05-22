@@ -7,7 +7,6 @@ edition = "2018"
 [dependencies]
 geng = { git = "https://gitlab.com/kuviman/geng" }
 serde = "*"
-net = { path = "net" }
 structopt = "*"
 log = "*"
 

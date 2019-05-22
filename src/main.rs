@@ -1,5 +1,6 @@
 #![allow(dead_code, unused_variables, unused_imports)]
 
+use geng::net;
 use geng::prelude::*;
 use log::{debug, error, info, trace, warn};
 
