@@ -3,6 +3,7 @@ stages:
   - deploy
 
 variables:
+  GIT_SUBMODULE_STRATEGY: recursive
   CARGO_HOME: $CI_PROJECT_DIR/.cache/.cargo
   CARGO_TARGET_DIR: $CI_PROJECT_DIR/.cache/.cargo-target
 
