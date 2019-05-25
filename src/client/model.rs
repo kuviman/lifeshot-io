@@ -319,7 +319,9 @@ impl Model {
             }
         }
         for projectile in dead_projectiles {
-            self.projectiles.remove(&projectile);
+            if let Some(p) = self.projectiles.remove(&projectile) {
+                self.sound_player.play(&self.assets.hit_sound, p.pos); // TODO: on actual hit
+            }
         }
         for (id, p) in message.model.projectiles {
             self.sound_player.play(&self.assets.shoot_sound, p.pos);
