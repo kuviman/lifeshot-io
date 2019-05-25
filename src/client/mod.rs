@@ -93,9 +93,22 @@ pub struct SoundPlayer {
     inner: Rc<SoundPlayerImpl>,
 }
 
-struct SoundEffect {
+pub struct SoundEffect {
     player: Rc<SoundPlayerImpl>,
     inner: geng::SoundEffect,
+}
+
+impl Deref for SoundEffect {
+    type Target = geng::SoundEffect;
+    fn deref(&self) -> &geng::SoundEffect {
+        &self.inner
+    }
+}
+
+impl DerefMut for SoundEffect {
+    fn deref_mut(&mut self) -> &mut geng::SoundEffect {
+        &mut self.inner
+    }
 }
 
 impl SoundEffect {

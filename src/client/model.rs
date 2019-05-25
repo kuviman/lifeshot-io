@@ -147,9 +147,11 @@ impl Spark {
 }
 
 pub struct Player {
+    sound_player: Rc<SoundPlayer>,
+    assets: Rc<Assets>,
     pub action: Action,
     pub entity: Entity,
-    pub projectile: Option<Projectile>,
+    pub projectile: Option<(Projectile, SoundEffect)>,
     time: f32,
 }
 
@@ -166,12 +168,25 @@ impl DerefMut for Player {
     }
 }
 
+impl Drop for Player {
+    fn drop(&mut self) {
+        if let Some((_, sound_effect)) = &mut self.projectile {
+            sound_effect.pause();
+        }
+    }
+}
+
 impl Player {
-    fn new(p: common_model::Player) -> Self {
+    fn new(p: common_model::Player, sound_player: &Rc<SoundPlayer>, assets: &Rc<Assets>) -> Self {
         Self {
+            assets: assets.clone(),
+            sound_player: sound_player.clone(),
             action: p.action,
             entity: Entity::new(p.entity),
-            projectile: p.projectile.map(|p| Projectile::new(p)),
+            projectile: p.projectile.map(|p| {
+                let sound_effect = sound_player.play(&assets.aim_sound, p.pos);
+                (Projectile::new(p), sound_effect)
+            }),
             time: 0.0,
         }
     }
@@ -193,11 +208,25 @@ impl Player {
             sync_delay,
             rules,
         );
-        self.projectile = p.projectile.map(|p| Projectile::new(p));
+        if let Some(p) = p.projectile {
+            if let Some((projectile, sound_effect)) = &mut self.projectile {
+                sound_effect.set_pos(p.pos);
+                *projectile = Projectile::new(p);
+            } else {
+                self.projectile = Some({
+                    let sound_effect = self.sound_player.play(&self.assets.aim_sound, p.pos);
+                    (Projectile::new(p), sound_effect)
+                });
+            }
+        } else {
+            if let Some((_, mut sound_effect)) = self.projectile.take() {
+                sound_effect.pause();
+            }
+        }
     }
     fn update(&mut self, delta_time: f32, rules: &Rules) {
         self.time += delta_time;
-        if let Some(projectile) = &mut self.projectile {
+        if let Some((projectile, _)) = &mut self.projectile {
             projectile.pos = self.entity.pos
                 + rules
                     .normalize_delta(self.action.aim - self.entity.pos)
@@ -227,7 +256,7 @@ impl Player {
             },
             i_color: Color::rgba(1.0, 1.0, 1.0, 0.1),
         });
-        if let Some(ref projectile) = self.projectile {
+        if let Some((ref projectile, _)) = self.projectile {
             renderer.queue(circle_renderer::Instance {
                 i_pos: projectile.pos,
                 i_size: projectile.size,
@@ -271,7 +300,7 @@ impl Model {
         let rules = &self.rules;
         for player in self.players.values_mut() {
             player.update(delta_time, rules);
-            if let Some(projectile) = &mut player.projectile {
+            if let Some((projectile, _)) = &mut player.projectile {
                 projectile.update_sparks(self.client_player_id, delta_time, &mut self.sparks);
             }
         }
@@ -308,7 +337,8 @@ impl Model {
             }
         }
         for (id, p) in message.model.players {
-            self.players.insert(id, Player::new(p));
+            self.players
+                .insert(id, Player::new(p, &self.sound_player, &self.assets));
         }
 
         let mut dead_projectiles: HashSet<Id> = self.projectiles.keys().cloned().collect();
