@@ -34,6 +34,8 @@ enum Command {
 
 #[derive(structopt::StructOpt, Debug)]
 struct Opts {
+    #[structopt(long = "log-level")]
+    log_level: Option<log::LevelFilter>,
     #[structopt(flatten)]
     net_opts: NetOpts,
     #[structopt(subcommand)]
@@ -65,6 +67,9 @@ fn main() {
     });
     #[cfg(not(target_arch = "wasm32"))]
     let opts: Opts = structopt::StructOpt::from_args();
+    if let Some(level) = opts.log_level {
+        log::set_max_level(level);
+    }
     trace!("Options used:\n{:#?}", opts);
 
     #[cfg(target_arch = "wasm32")]
