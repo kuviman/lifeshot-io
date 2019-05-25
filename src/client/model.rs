@@ -322,6 +322,7 @@ impl Model {
             self.projectiles.remove(&projectile);
         }
         for (id, p) in message.model.projectiles {
+            self.sound_player.play(&self.assets.shoot_sound, p.pos);
             self.projectiles.insert(id, Projectile::new(p));
         }
 
