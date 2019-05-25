@@ -41,10 +41,7 @@ struct Opts {
 }
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
-    env_logger::init_from_env(
-        env_logger::Env::new().filter_or("LIFESHOT_LOG", "lifeshot_io=info,net=info"),
-    );
+    logger::init();
     trace!("Initializing");
 
     #[cfg(target_arch = "wasm32")]

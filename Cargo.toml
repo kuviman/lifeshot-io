@@ -16,4 +16,3 @@ url = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ctrlc = "*"
-env_logger = "*"
