@@ -8,6 +8,21 @@ use background::Background;
 use circle_renderer::CircleRenderer;
 use model::*;
 
+#[derive(geng::Assets)]
+pub struct Assets {
+    #[path = "aim.wav"]
+    aim_sound: geng::Sound,
+    #[path = "death.wav"]
+    death_sound: geng::Sound,
+    #[path = "heal.wav"]
+    heal_sound: geng::Sound,
+    #[path = "hit.wav"]
+    hit_sound: geng::Sound,
+    #[path = "shoot.wav"]
+    shoot_sound: geng::Sound,
+    #[path = "music.ogg"]
+    music: geng::Sound,
+}
 enum ClientAppState {
     Connecting(Box<Promise<Output = net::client::Connection<ServerMessage, ClientMessage>>>),
     Playing(ClientPlayApp),
@@ -15,13 +30,15 @@ enum ClientAppState {
 
 pub struct ClientApp {
     geng: Rc<Geng>,
+    assets: Option<Assets>,
     state: Option<ClientAppState>,
 }
 
 impl ClientApp {
-    pub fn new(geng: &Rc<Geng>, net_opts: NetOpts) -> Self {
+    pub fn new(geng: &Rc<Geng>, net_opts: NetOpts, assets: Assets) -> Self {
         Self {
             geng: geng.clone(),
+            assets: Some(assets),
             state: Some(ClientAppState::Connecting(Box::new(net::client::connect(
                 &net_opts.host,
                 net_opts.port,
@@ -38,7 +55,9 @@ impl geng::App for ClientApp {
                     let connection = promise.unwrap();
                     self.state
                         .replace(ClientAppState::Playing(ClientPlayApp::new(
-                            &self.geng, connection,
+                            &self.geng,
+                            connection,
+                            self.assets.take().unwrap(),
                         )));
                 }
             }
@@ -65,8 +84,61 @@ impl geng::App for ClientApp {
     }
 }
 
+struct SoundPlayerImpl {
+    rules: Rules,
+    pos: Cell<Vec2<f32>>,
+}
+
+pub struct SoundPlayer {
+    inner: Rc<SoundPlayerImpl>,
+}
+
+struct SoundEffect {
+    player: Rc<SoundPlayerImpl>,
+    inner: geng::SoundEffect,
+}
+
+impl SoundEffect {
+    fn set_pos(&mut self, pos: Vec2<f32>) {
+        self.inner.set_volume(f64::from(
+            clamp(
+                1.0 - (self
+                    .player
+                    .rules
+                    .normalize_delta(self.player.pos.get() - pos)
+                    .len()
+                    / ClientPlayApp::CAMERA_FOV)
+                    .powf(2.0),
+                0.0..=1.0,
+            ) * 0.2,
+        ));
+    }
+}
+
+impl SoundPlayer {
+    fn new() -> Self {
+        Self {
+            inner: Rc::new(SoundPlayerImpl {
+                pos: Cell::new(vec2(0.0, 0.0)),
+                rules: default(), // TODO
+            }),
+        }
+    }
+    fn play(&self, sound: &geng::Sound, pos: Vec2<f32>) -> SoundEffect {
+        let mut effect = SoundEffect {
+            player: self.inner.clone(),
+            inner: sound.effect(),
+        };
+        effect.set_pos(pos);
+        effect.inner.play();
+        effect
+    }
+}
+
 struct ClientPlayApp {
     geng: Rc<Geng>,
+    sound_player: Rc<SoundPlayer>,
+    assets: Rc<Assets>,
     client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
     background: Option<Background>,
@@ -84,17 +156,22 @@ impl ClientPlayApp {
     pub fn new(
         geng: &Rc<Geng>,
         mut connection: net::client::Connection<ServerMessage, ClientMessage>,
+        assets: Assets,
     ) -> Self {
+        let assets = Rc::new(assets);
+        let sound_player = Rc::new(SoundPlayer::new());
         let action = Action::default();
         connection.send(ClientMessage::Action(action.clone()));
         Self {
             geng: geng.clone(),
+            sound_player: sound_player.clone(),
+            assets: assets.clone(),
             background: None,
             client_player_id: None,
             circle_renderer: CircleRenderer::new(geng),
             action,
             camera_pos: vec2(0.0, 0.0),
-            model: Model::new(),
+            model: Model::new(&assets, &sound_player),
             connection,
             mouse_pos: vec2(0.0, 0.0),
             font: geng::Font::new(geng, include_bytes!("Simply Rounded Bold.ttf").to_vec())
@@ -105,6 +182,7 @@ impl ClientPlayApp {
 
 impl geng::App for ClientPlayApp {
     fn update(&mut self, delta_time: f64) {
+        self.sound_player.inner.pos.set(self.camera_pos);
         {
             let mut got = false;
             for message in self.connection.new_messages() {

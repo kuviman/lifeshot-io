@@ -242,6 +242,8 @@ impl Player {
 }
 
 pub struct Model {
+    assets: Rc<Assets>,
+    sound_player: Rc<SoundPlayer>,
     pub last_sync_time: Option<f32>,
     pub client_player_id: Option<Id>,
     pub rules: Rules,
@@ -252,8 +254,10 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new() -> Self {
+    pub fn new(assets: &Rc<Assets>, sound_player: &Rc<SoundPlayer>) -> Self {
         Self {
+            assets: assets.clone(),
+            sound_player: sound_player.clone(),
             last_sync_time: None,
             rules: default(),
             players: HashMap::new(),
@@ -299,7 +303,9 @@ impl Model {
             }
         }
         for player in dead_players {
-            self.players.remove(&player);
+            if let Some(player) = self.players.remove(&player) {
+                self.sound_player.play(&self.assets.death_sound, player.pos);
+            }
         }
         for (id, p) in message.model.players {
             self.players.insert(id, Player::new(p));

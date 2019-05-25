@@ -43,6 +43,14 @@ struct Opts {
 }
 
 fn main() {
+    #[cfg(not(any(target_arch = "asmjs", target_arch = "wasm32")))]
+    {
+        if let Ok(path) = std::env::var("CARGO_MANIFEST_DIR") {
+            std::env::set_current_dir(std::path::Path::new(&path).join("static")).unwrap();
+        } else {
+            std::env::set_current_dir(std::env::current_exe().unwrap().parent().unwrap()).unwrap();
+        }
+    }
     logger::init();
     let opts: Opts = program_args::parse();
     if let Some(level) = opts.log_level {
@@ -90,7 +98,10 @@ fn main() {
             title: "LifeShot.io".to_owned(),
             ..default()
         }));
-        let app = ClientApp::new(&geng, opts.net_opts.clone());
+        let app = geng::LoadingScreen::new(&geng, geng::DefaultLoadingScreen::new(&geng), {
+            let geng = geng.clone();
+            move |assets| ClientApp::new(&geng, opts.net_opts.clone(), assets)
+        });
         geng::run(geng, app);
     }
 
