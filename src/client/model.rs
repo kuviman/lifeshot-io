@@ -358,6 +358,15 @@ impl Model {
             self.projectiles.insert(id, Projectile::new(p));
         }
 
+        let mut dead_food_ids: HashSet<Id> = self.food.iter().map(|f| f.id).collect();
+        for f in &message.model.food {
+            dead_food_ids.remove(&f.id);
+        }
+        for f in &self.food {
+            if dead_food_ids.contains(&f.id) {
+                self.sound_player.play(&self.assets.heal_sound, f.pos);
+            }
+        }
         self.food = message.model.food;
     }
 }
