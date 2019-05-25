@@ -105,12 +105,12 @@ fn main() {
     };
 
     if client {
-        let context = Rc::new(geng::Context::new(geng::ContextOptions {
+        let geng = Rc::new(Geng::new(geng::ContextOptions {
             title: "LifeShot.io".to_owned(),
             ..default()
         }));
-        let app = ClientApp::new(&context, opts.net_opts.clone());
-        geng::run(context, app);
+        let app = ClientApp::new(&geng, opts.net_opts.clone());
+        geng::run(geng, app);
     }
 
     #[cfg(not(target_arch = "wasm32"))]

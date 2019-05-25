@@ -19,10 +19,10 @@ pub struct CircleRenderer {
 }
 
 impl CircleRenderer {
-    pub fn new(context: &Rc<geng::Context>) -> Self {
+    pub fn new(geng: &Rc<Geng>) -> Self {
         Self {
             quad_geometry: ugli::VertexBuffer::new_static(
-                context.ugli_context(),
+                geng.ugli(),
                 vec![
                     QuadVertex {
                         a_pos: vec2(-1.0, -1.0),
@@ -38,8 +38,8 @@ impl CircleRenderer {
                     },
                 ],
             ),
-            instances: ugli::VertexBuffer::new_dynamic(context.ugli_context(), Vec::new()),
-            program: context
+            instances: ugli::VertexBuffer::new_dynamic(geng.ugli(), Vec::new()),
+            program: geng
                 .shader_lib()
                 .compile(include_str!("program.glsl"))
                 .unwrap(),

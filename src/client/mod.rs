@@ -14,14 +14,14 @@ enum ClientAppState {
 }
 
 pub struct ClientApp {
-    context: Rc<geng::Context>,
+    geng: Rc<Geng>,
     state: Option<ClientAppState>,
 }
 
 impl ClientApp {
-    pub fn new(context: &Rc<geng::Context>, net_opts: NetOpts) -> Self {
+    pub fn new(geng: &Rc<Geng>, net_opts: NetOpts) -> Self {
         Self {
-            context: context.clone(),
+            geng: geng.clone(),
             state: Some(ClientAppState::Connecting(Box::new(net::client::connect(
                 &net_opts.host,
                 net_opts.port,
@@ -38,8 +38,7 @@ impl geng::App for ClientApp {
                     let connection = promise.unwrap();
                     self.state
                         .replace(ClientAppState::Playing(ClientPlayApp::new(
-                            &self.context,
-                            connection,
+                            &self.geng, connection,
                         )));
                 }
             }
@@ -67,7 +66,7 @@ impl geng::App for ClientApp {
 }
 
 struct ClientPlayApp {
-    context: Rc<geng::Context>,
+    geng: Rc<Geng>,
     client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
     background: Option<Background>,
@@ -83,22 +82,22 @@ impl ClientPlayApp {
     const CAMERA_FOV: f32 = 30.0;
 
     pub fn new(
-        context: &Rc<geng::Context>,
+        geng: &Rc<Geng>,
         mut connection: net::client::Connection<ServerMessage, ClientMessage>,
     ) -> Self {
         let action = Action::default();
         connection.send(ClientMessage::Action(action.clone()));
         Self {
-            context: context.clone(),
+            geng: geng.clone(),
             background: None,
             client_player_id: None,
-            circle_renderer: CircleRenderer::new(context),
+            circle_renderer: CircleRenderer::new(geng),
             action,
             camera_pos: vec2(0.0, 0.0),
             model: Model::new(),
             connection,
             mouse_pos: vec2(0.0, 0.0),
-            font: geng::Font::new(context, include_bytes!("Simply Rounded Bold.ttf").to_vec())
+            font: geng::Font::new(geng, include_bytes!("Simply Rounded Bold.ttf").to_vec())
                 .unwrap(),
         }
     }
@@ -129,20 +128,20 @@ impl geng::App for ClientPlayApp {
         {
             let mut action = &mut self.action;
             action.target_vel = vec2(0.0, 0.0);
-            if self.context.window().is_key_pressed(geng::Key::W) {
+            if self.geng.window().is_key_pressed(geng::Key::W) {
                 action.target_vel.y += 1.0;
             }
-            if self.context.window().is_key_pressed(geng::Key::A) {
+            if self.geng.window().is_key_pressed(geng::Key::A) {
                 action.target_vel.x -= 1.0;
             }
-            if self.context.window().is_key_pressed(geng::Key::S) {
+            if self.geng.window().is_key_pressed(geng::Key::S) {
                 action.target_vel.y -= 1.0;
             }
-            if self.context.window().is_key_pressed(geng::Key::D) {
+            if self.geng.window().is_key_pressed(geng::Key::D) {
                 action.target_vel.x += 1.0;
             }
             action.shoot = self
-                .context
+                .geng
                 .window()
                 .is_button_pressed(geng::MouseButton::Left);
             action.aim = self.mouse_pos;
@@ -168,7 +167,7 @@ impl geng::App for ClientPlayApp {
             * Mat4::scale_uniform(2.0 / Self::CAMERA_FOV)
             * Mat4::translate(-self.camera_pos.extend(0.0));
         self.mouse_pos = {
-            let mouse_pos = self.context.window().mouse_pos().map(|x| x as f32);
+            let mouse_pos = self.geng.window().mouse_pos().map(|x| x as f32);
             let mouse_pos = vec2(
                 mouse_pos.x / framebuffer_size.x * 2.0 - 1.0,
                 mouse_pos.y / framebuffer_size.y * 2.0 - 1.0,
@@ -315,7 +314,7 @@ impl geng::App for ClientPlayApp {
                     self.connection.send(ClientMessage::Spawn);
                 }
                 geng::Key::F => {
-                    self.context.window().toggle_fullscreen();
+                    self.geng.window().toggle_fullscreen();
                 }
                 _ => {}
             },
