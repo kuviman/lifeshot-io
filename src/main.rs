@@ -14,7 +14,7 @@ use common_model::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use server::*;
 
-#[derive(structopt::StructOpt, Debug, Clone)]
+#[derive(StructOpt, Debug, Clone)]
 pub struct NetOpts {
     #[structopt(long = "host", default_value = "server.lifeshot.io")]
     host: String,
@@ -24,7 +24,7 @@ pub struct NetOpts {
     extra_delay: Option<u64>,
 }
 
-#[derive(structopt::StructOpt, Debug)]
+#[derive(StructOpt, Debug)]
 enum Command {
     #[structopt(name = "server-only")]
     ServerOnly,
@@ -32,7 +32,7 @@ enum Command {
     WithServer,
 }
 
-#[derive(structopt::StructOpt, Debug)]
+#[derive(StructOpt, Debug)]
 struct Opts {
     #[structopt(long = "log-level")]
     log_level: Option<log::LevelFilter>,
@@ -44,33 +44,12 @@ struct Opts {
 
 fn main() {
     logger::init();
-    trace!("Initializing");
-
-    #[cfg(target_arch = "wasm32")]
-    let opts: Opts = structopt::StructOpt::from_iter({
-        let mut args = Vec::<String>::new();
-        args.push("lifeshot-io".to_owned()); // `Program` itself is the first arg
-        let url = stdweb::web::window()
-            .location()
-            .expect("Failed to get window.location.href")
-            .href()
-            .expect("Failed to get window.location.href");
-        let url = url::Url::parse(&url).expect("Failed to parse window.location.href");
-        for (key, value) in url.query_pairs() {
-            let key: &str = &key;
-            let value: &str = &value;
-            args.push("--".to_owned() + key);
-            args.push(value.to_owned());
-        }
-        trace!("href => args: {:?}", args);
-        args
-    });
-    #[cfg(not(target_arch = "wasm32"))]
-    let opts: Opts = structopt::StructOpt::from_args();
+    let opts: Opts = program_args::parse();
     if let Some(level) = opts.log_level {
         log::set_max_level(level);
     }
     trace!("Options used:\n{:#?}", opts);
+    trace!("Initializing");
 
     #[cfg(target_arch = "wasm32")]
     let server = None::<()>;

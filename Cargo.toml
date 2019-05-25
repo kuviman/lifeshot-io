@@ -7,12 +7,9 @@ edition = "2018"
 [dependencies]
 geng = { path = "geng" }
 serde = "*"
-structopt = "*"
-log = "*"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 stdweb = "*"
-url = "*"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ctrlc = "*"
