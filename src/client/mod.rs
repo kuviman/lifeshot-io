@@ -148,6 +148,7 @@ struct ClientPlayApp {
     mouse_pos: Vec2<f32>,
     connection: net::client::Connection<ServerMessage, ClientMessage>,
     font: geng::Font,
+    music: Option<geng::SoundEffect>,
 }
 
 impl ClientPlayApp {
@@ -156,8 +157,9 @@ impl ClientPlayApp {
     pub fn new(
         geng: &Rc<Geng>,
         mut connection: net::client::Connection<ServerMessage, ClientMessage>,
-        assets: Assets,
+        mut assets: Assets,
     ) -> Self {
+        assets.music.looped = true;
         let assets = Rc::new(assets);
         let sound_player = Rc::new(SoundPlayer::new());
         let action = Action::default();
@@ -176,6 +178,7 @@ impl ClientPlayApp {
             mouse_pos: vec2(0.0, 0.0),
             font: geng::Font::new(geng, include_bytes!("Simply Rounded Bold.ttf").to_vec())
                 .unwrap(),
+            music: None,
         }
     }
 }
@@ -390,6 +393,13 @@ impl geng::App for ClientPlayApp {
             geng::Event::KeyDown { key } => match key {
                 geng::Key::R => {
                     self.connection.send(ClientMessage::Spawn);
+                    if self.music.is_none() {
+                        self.music = Some({
+                            let mut music = self.assets.music.play();
+                            music.set_volume(0.2);
+                            music
+                        })
+                    }
                 }
                 geng::Key::F => {
                     self.geng.window().toggle_fullscreen();
