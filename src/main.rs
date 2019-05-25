@@ -48,7 +48,7 @@ fn main() {
     if let Some(level) = opts.log_level {
         log::set_max_level(level);
     }
-    trace!("Options used:\n{:#?}", opts);
+    info!("Options used:\n{:#?}", opts);
     trace!("Initializing");
 
     #[cfg(target_arch = "wasm32")]
