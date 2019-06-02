@@ -232,7 +232,7 @@ impl Food {
 impl Projectile {
     const UNIT_SIZE_VELOCITY: f32 = 20.0;
     const DEATH_SPEED: f32 = 0.1;
-    const STRENGTH: f32 = 0.5;
+    const STRENGTH: f32 = 2.0;
     fn update(&mut self, delta_time: f32, rules: &Rules) {
         self.add_mass(-Self::DEATH_SPEED * delta_time);
         self.entity.update(delta_time, rules);
