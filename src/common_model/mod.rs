@@ -165,7 +165,8 @@ impl Player {
                 dr = dr.normalize();
             }
             projectile.pos = self.entity.pos + dr * self.entity.size;
-            projectile.vel = dr * Projectile::SPEED;
+            projectile.entity.vel =
+                dr * Projectile::UNIT_SIZE_VELOCITY * projectile.entity.size.powf(-0.5);
         }
 
         if self.action.shoot {
@@ -229,7 +230,7 @@ impl Food {
 }
 
 impl Projectile {
-    const SPEED: f32 = 25.0;
+    const UNIT_SIZE_VELOCITY: f32 = 20.0;
     const DEATH_SPEED: f32 = 0.1;
     const STRENGTH: f32 = 0.5;
     fn update(&mut self, delta_time: f32, rules: &Rules) {
