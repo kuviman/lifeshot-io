@@ -20,6 +20,8 @@ pub struct NetOpts {
     host: String,
     #[structopt(long = "port", default_value = "1154")]
     port: u16,
+    #[structopt(long = "addr", default_value = "wss://server.lifeshot.io")]
+    addr: String,
     #[structopt(long = "extra-delay")]
     extra_delay: Option<u64>,
 }

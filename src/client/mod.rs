@@ -40,8 +40,7 @@ impl ClientApp {
             geng: geng.clone(),
             assets: Some(assets),
             state: Some(ClientAppState::Connecting(Box::new(net::client::connect(
-                &net_opts.host,
-                net_opts.port,
+                &net_opts.addr,
             )))),
         }
     }

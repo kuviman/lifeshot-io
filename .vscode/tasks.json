@@ -6,7 +6,7 @@
         {
             "label": "Local run",
             "type": "shell",
-            "command": "cargo run --release -- --host 127.0.0.1 with-server",
+            "command": "cargo run --release -- --host 127.0.0.1 --port 1234 --addr ws://127.0.0.1:1234 with-server",
             "problemMatcher": [
                 "$rustc"
             ]
