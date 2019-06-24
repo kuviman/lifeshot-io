@@ -147,6 +147,35 @@ impl SoundPlayer {
     }
 }
 
+struct TrafficWatch {
+    inbound: (usize, usize),
+    outbound: (usize, usize),
+    timer: Timer,
+}
+
+impl TrafficWatch {
+    fn new() -> Self {
+        Self {
+            inbound: (0, 0),
+            outbound: (0, 0),
+            timer: Timer::new(),
+        }
+    }
+    fn update(&mut self, traffic: &net::Traffic) {
+        if self.timer.elapsed() > 1.0 {
+            fn fmt((prev, cur): (usize, usize)) -> String {
+                format!("{}KB/s", (cur - prev) / 1024)
+            }
+            debug!("in: {}, out: {}", fmt(self.inbound), fmt(self.outbound));
+            self.timer.tick();
+            self.inbound.0 = traffic.inbound();
+            self.outbound.0 = traffic.outbound();
+        }
+        self.inbound.1 = traffic.inbound();
+        self.outbound.1 = traffic.outbound();
+    }
+}
+
 struct ClientPlayApp {
     geng: Rc<Geng>,
     sound_player: Rc<SoundPlayer>,
@@ -159,6 +188,7 @@ struct ClientPlayApp {
     model: Model,
     mouse_pos: Vec2<f32>,
     connection: net::client::Connection<ServerMessage, ClientMessage>,
+    traffic_watch: TrafficWatch,
     font: geng::Font,
     music: Option<geng::SoundEffect>,
 }
@@ -187,6 +217,7 @@ impl ClientPlayApp {
             camera_pos: vec2(0.0, 0.0),
             model: Model::new(&assets, &sound_player),
             connection,
+            traffic_watch: TrafficWatch::new(),
             mouse_pos: vec2(0.0, 0.0),
             font: geng::Font::new(geng, include_bytes!("Simply Rounded Bold.ttf").to_vec())
                 .unwrap(),
@@ -197,6 +228,7 @@ impl ClientPlayApp {
 
 impl geng::App for ClientPlayApp {
     fn update(&mut self, delta_time: f64) {
+        self.traffic_watch.update(self.connection.traffic());
         self.sound_player.inner.pos.set(self.camera_pos);
         {
             let mut got = false;
