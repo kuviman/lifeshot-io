@@ -176,6 +176,41 @@ impl TrafficWatch {
     }
 }
 
+struct PingWatch {
+    min: f64,
+    max: f64,
+    ping_timer: Timer,
+    timer: Timer,
+    text: String,
+}
+
+impl PingWatch {
+    fn new() -> Self {
+        Self {
+            min: 100.0,
+            max: 0.0,
+            ping_timer: Timer::new(),
+            timer: Timer::new(),
+            text: "ping".to_owned(),
+        }
+    }
+    fn update(&mut self) {
+        let ping = self.ping_timer.tick();
+        self.min = min(self.min, ping);
+        self.max = max(self.max, ping);
+        if self.timer.elapsed() > 1.0 {
+            self.text = format!(
+                "ping: {}-{}ms",
+                (self.min * 1000.0) as i32,
+                (self.max * 1000.0) as i32
+            );
+            self.timer.tick();
+            self.min = 100.0;
+            self.max = 0.0;
+        }
+    }
+}
+
 struct ClientPlayApp {
     geng: Rc<Geng>,
     sound_player: Rc<SoundPlayer>,
@@ -189,6 +224,7 @@ struct ClientPlayApp {
     mouse_pos: Vec2<f32>,
     connection: net::client::Connection<ServerMessage, ClientMessage>,
     traffic_watch: TrafficWatch,
+    ping_watch: PingWatch,
     font: geng::Font,
     music: Option<geng::SoundEffect>,
 }
@@ -218,6 +254,7 @@ impl ClientPlayApp {
             model: Model::new(&assets, &sound_player),
             connection,
             traffic_watch: TrafficWatch::new(),
+            ping_watch: PingWatch::new(),
             mouse_pos: vec2(0.0, 0.0),
             font: geng::Font::new(geng, include_bytes!("Simply Rounded Bold.ttf").to_vec())
                 .unwrap(),
@@ -241,6 +278,7 @@ impl geng::App for ClientPlayApp {
                 }
             }
             if got {
+                self.ping_watch.update();
                 self.connection
                     .send(ClientMessage::Action(self.action.clone()));
             }
@@ -368,11 +406,11 @@ impl geng::App for ClientPlayApp {
 
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
 
-        if !player_alive {
-            let font = &self.font;
-            let scale = framebuffer_size.y / 20.0;
-            let mid = framebuffer_size / 2.0;
+        let font = &self.font;
+        let scale = framebuffer_size.y / 20.0;
+        let mid = framebuffer_size / 2.0;
 
+        if !player_alive {
             font.draw_aligned(
                 framebuffer,
                 "This is a work in progress",
@@ -431,6 +469,14 @@ impl geng::App for ClientPlayApp {
                 Color::rgb(1.0, 1.0, 1.0),
             );
         }
+
+        font.draw(
+            framebuffer,
+            &self.ping_watch.text,
+            vec2(10.0, 10.0),
+            16.0,
+            Color::rgb(0.5, 0.5, 0.5),
+        );
     }
     fn handle_event(&mut self, event: geng::Event) {
         match event {
