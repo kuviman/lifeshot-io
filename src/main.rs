@@ -14,6 +14,9 @@ use common_model::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use server::*;
 
+mod events;
+use events::*;
+
 #[derive(StructOpt, Debug, Clone)]
 pub struct NetOpts {
     #[structopt(long = "host", default_value = "server.lifeshot.io")]

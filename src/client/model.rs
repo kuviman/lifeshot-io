@@ -278,7 +278,7 @@ pub struct Model {
     pub rules: Rules,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
-    pub food: Vec<common_model::Food>,
+    pub food: HashMap<Id, common_model::Food>,
     pub sparks: Vec<Spark>,
 }
 
@@ -291,7 +291,7 @@ impl Model {
             rules: default(),
             players: HashMap::new(),
             projectiles: HashMap::new(),
-            food: Vec::new(),
+            food: HashMap::new(),
             sparks: Vec::new(),
             client_player_id: None,
         }
@@ -358,15 +358,19 @@ impl Model {
             self.projectiles.insert(id, Projectile::new(p));
         }
 
-        let mut dead_food_ids: HashSet<Id> = self.food.iter().map(|f| f.id).collect();
-        for f in &message.model.food {
-            dead_food_ids.remove(&f.id);
-        }
-        for f in &self.food {
-            if dead_food_ids.contains(&f.id) {
-                self.sound_player.play(&self.assets.heal_sound, f.pos);
+        for event in message.events {
+            match event {
+                common_model::Event::Food(event) => match event {
+                    common_model::FoodEvent::Add(food) => {
+                        self.food.insert(food.id, food);
+                    }
+                    common_model::FoodEvent::Remove(id) => {
+                        if let Some(food) = self.food.remove(&id) {
+                            self.sound_player.play(&self.assets.heal_sound, food.pos);
+                        }
+                    }
+                },
             }
         }
-        self.food = message.model.food;
     }
 }

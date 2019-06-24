@@ -7,6 +7,7 @@ use model::*;
 struct Client {
     player_id: Id,
     model: Arc<Mutex<Model>>,
+    events: std::sync::mpsc::Receiver<common_model::Event>,
     sender: Box<net::Sender<ServerMessage>>,
 }
 
@@ -27,7 +28,8 @@ impl net::Receiver<ClientMessage> for Client {
         if reply {
             self.sender.send(ServerMessage {
                 client_player_id: self.player_id,
-                model: model.clone(),
+                model: model.to_message(),
+                events: self.events.try_iter().collect(),
             });
         }
     }
@@ -45,19 +47,21 @@ impl net::server::App for ServerApp {
                 .spawn()
                 .expect("Failed to run NEW_PLAYER_CMD");
         }
-        let player_id = {
+        let (player_id, events) = {
             let mut model = self.model.lock().unwrap();
             let player_id = model.new_player();
             sender.send(ServerMessage {
                 client_player_id: player_id,
-                model: model.clone(),
+                model: model.to_message(),
+                events: model.initial_events(),
             });
-            player_id
+            (player_id, model.events.subscribe())
         };
         Client {
             model: self.model.clone(),
             player_id,
             sender,
+            events,
         }
     }
 }

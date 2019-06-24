@@ -280,12 +280,23 @@ impl Rules {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum FoodEvent {
+    Add(Food),
+    Remove(Id),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum Event {
+    Food(FoodEvent),
+}
+
 pub struct Model {
     pub rules: Rules,
     pub current_time: f32,
     pub players: HashMap<Id, Player>,
     pub projectiles: HashMap<Id, Projectile>,
     pub food: Vec<Food>,
+    pub events: Events<Event>,
 }
 
 impl Model {
@@ -344,7 +355,7 @@ impl Model {
                 n = min(n, global_rng().gen_range(1, N));
             }
             for _ in 0..n {
-                self.food.push(Food::new(
+                let food = Food::new(
                     rules.normalize_pos(
                         pos + vec2(
                             global_rng().gen_range(-1.0, 1.0),
@@ -352,7 +363,9 @@ impl Model {
                         ) / 5.0,
                     ),
                     rules,
-                ));
+                );
+                self.events.fire(Event::Food(FoodEvent::Add(food.clone())));
+                self.food.push(food);
             }
         }
 
@@ -367,7 +380,15 @@ impl Model {
 
         self.players.retain(|_, e| e.alive());
         self.projectiles.retain(|_, e| e.alive());
-        self.food.retain(|e| e.alive());
+        let events = &mut self.events;
+        self.food.retain(|e| {
+            if e.alive() {
+                true
+            } else {
+                events.fire(Event::Food(FoodEvent::Remove(e.id)));
+                false
+            }
+        });
     }
     pub fn handle(&mut self, player_id: Id, message: ClientMessage) {
         match message {
@@ -402,13 +423,41 @@ impl Default for Model {
             players: HashMap::new(),
             projectiles: HashMap::new(),
             food: Vec::new(),
+            events: Events::new(),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct ModelMessage {
+    pub rules: Rules,
+    pub current_time: f32,
+    pub players: HashMap<Id, Player>,
+    pub projectiles: HashMap<Id, Projectile>,
+}
+
+impl Model {
+    pub fn to_message(&self) -> ModelMessage {
+        ModelMessage {
+            rules: self.rules.clone(),
+            current_time: self.current_time,
+            players: self.players.clone(),
+            projectiles: self.projectiles.clone(),
+        }
+    }
+    pub fn initial_events(&self) -> Vec<Event> {
+        let mut result = Vec::new();
+        for food in &self.food {
+            result.push(Event::Food(FoodEvent::Add(food.clone())));
+        }
+        result
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ServerMessage {
-    pub model: Model,
+    pub model: ModelMessage,
+    pub events: Vec<Event>,
     pub client_player_id: Id,
 }
 

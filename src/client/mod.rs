@@ -318,7 +318,7 @@ impl geng::App for ClientPlayApp {
             }
         }
 
-        for food in &self.model.food {
+        for food in self.model.food.values() {
             self.circle_renderer.queue(circle_renderer::Instance {
                 i_pos: food.pos,
                 i_size: food.size,
