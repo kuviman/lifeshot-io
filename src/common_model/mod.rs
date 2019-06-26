@@ -95,6 +95,7 @@ pub struct Player {
     pub entity: Entity,
     pub projectile: Option<Projectile>,
     pub action: Action,
+    pub last_hit: Option<Id>,
 }
 
 impl Deref for Player {
@@ -128,6 +129,7 @@ impl Player {
                 size: Self::INITIAL_SIZE,
             },
             action: default(),
+            last_hit: None,
         }
     }
     fn update(&mut self, delta_time: f32, rules: &Rules) -> Option<Projectile> {
@@ -286,9 +288,16 @@ pub enum FoodEvent {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Scores {
+    pub kills: usize,
+    pub deaths: usize,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Event {
     Food(FoodEvent),
     PlayerName { player_id: Id, name: String },
+    ScoresUpdate(HashMap<Id, Scores>),
 }
 
 pub struct Model {
@@ -298,6 +307,7 @@ pub struct Model {
     pub projectiles: HashMap<Id, Projectile>,
     pub food: Vec<Food>,
     pub events: Events<Event>,
+    scores: HashMap<Id, Scores>,
     player_names: HashMap<Id, String>,
 }
 
@@ -306,7 +316,24 @@ impl Model {
     pub const MAX_FOOD_EXTRA: f32 = 10.0;
 
     pub fn new_player(&mut self) -> Id {
-        Id::new()
+        let id = Id::new();
+        self.scores.insert(
+            id,
+            Scores {
+                kills: 0,
+                deaths: 0,
+            },
+        );
+        self.scores_updated();
+        id
+    }
+    pub fn disconnect(&mut self, id: Id) {
+        self.scores.remove(&id);
+        self.players.remove(&id);
+        self.scores_updated();
+    }
+    fn scores_updated(&mut self) {
+        self.events.fire(Event::ScoresUpdate(self.scores.clone()));
     }
     pub fn tick(&mut self) {
         self.update(1.0 / Self::TICKS_PER_SECOND as f32);
@@ -325,7 +352,9 @@ impl Model {
         for projectile in self.projectiles.values_mut() {
             for player in self.players.values_mut() {
                 if projectile.owner_id != player.id {
-                    projectile.hit(player, Projectile::STRENGTH, rules);
+                    if projectile.hit(player, Projectile::STRENGTH, rules) {
+                        player.last_hit = Some(projectile.owner_id);
+                    }
                 }
             }
         }
@@ -380,6 +409,21 @@ impl Model {
             }
         }
 
+        let mut scores_updated = false;
+        for player in self.players.values() {
+            if !player.alive() {
+                if let Some(scores) = self.scores.get_mut(&player.id) {
+                    scores.deaths += 1;
+                }
+                if let Some(killer) = player.last_hit {
+                    if let Some(scores) = self.scores.get_mut(&killer) {
+                        scores.kills += 1;
+                    }
+                }
+                scores_updated = true;
+            }
+        }
+
         self.players.retain(|_, e| e.alive());
         self.projectiles.retain(|_, e| e.alive());
         let events = &mut self.events;
@@ -391,6 +435,9 @@ impl Model {
                 false
             }
         });
+        if scores_updated {
+            self.scores_updated();
+        }
     }
     pub fn handle(&mut self, player_id: Id, message: ClientMessage) {
         match message {
@@ -431,6 +478,7 @@ impl Default for Model {
             food: Vec::new(),
             events: Events::new(),
             player_names: HashMap::new(),
+            scores: HashMap::new(),
         }
     }
 }
@@ -463,6 +511,7 @@ impl Model {
                 name: name.clone(),
             });
         }
+        result.push(Event::ScoresUpdate(self.scores.clone()));
         result
     }
 }

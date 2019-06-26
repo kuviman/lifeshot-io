@@ -14,7 +14,7 @@ struct Client {
 
 impl Drop for Client {
     fn drop(&mut self) {
-        // TODO: remove the player
+        self.model.lock().unwrap().disconnect(self.player_id);
         if let Some(name) = &self.name {
             info!("{:?} disconnected", name);
         }

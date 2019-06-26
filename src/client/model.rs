@@ -273,6 +273,7 @@ impl Player {
 pub struct Model {
     assets: Rc<Assets>,
     sound_player: Rc<SoundPlayer>,
+    pub scores: HashMap<Id, common_model::Scores>,
     pub last_sync_time: Option<f32>,
     pub client_player_id: Option<Id>,
     pub rules: Rules,
@@ -286,6 +287,7 @@ impl Model {
     pub fn new(assets: &Rc<Assets>, sound_player: &Rc<SoundPlayer>) -> Self {
         Self {
             assets: assets.clone(),
+            scores: HashMap::new(),
             sound_player: sound_player.clone(),
             last_sync_time: None,
             rules: default(),
@@ -371,6 +373,9 @@ impl Model {
                     }
                 },
                 common_model::Event::PlayerName { .. } => {}
+                common_model::Event::ScoresUpdate(scores) => {
+                    self.scores = scores;
+                }
             }
         }
     }
