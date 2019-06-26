@@ -35,13 +35,16 @@ pub struct ClientApp {
 }
 
 impl ClientApp {
-    pub fn new(geng: &Rc<Geng>, net_opts: NetOpts, assets: Assets) -> Self {
+    pub fn new(geng: &Rc<Geng>, name: String, net_opts: NetOpts, assets: Assets) -> Self {
         Self {
             geng: geng.clone(),
             assets: Some(assets),
-            state: Some(ClientAppState::Connecting(Box::new(net::client::connect(
-                &net_opts.addr,
-            )))),
+            state: Some(ClientAppState::Connecting(Box::new(
+                net::client::connect(&net_opts.addr).map(|mut connection| {
+                    connection.send(ClientMessage::SetName(name));
+                    connection
+                }),
+            ))),
         }
     }
 }

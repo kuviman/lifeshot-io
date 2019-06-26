@@ -288,6 +288,7 @@ pub enum FoodEvent {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Event {
     Food(FoodEvent),
+    PlayerName { player_id: Id, name: String },
 }
 
 pub struct Model {
@@ -411,6 +412,9 @@ impl Model {
                     );
                 }
             }
+            ClientMessage::SetName(name) => {
+                self.events.fire(Event::PlayerName { player_id, name });
+            }
         }
     }
 }
@@ -465,4 +469,5 @@ pub struct ServerMessage {
 pub enum ClientMessage {
     Action(Action),
     Spawn,
+    SetName(String),
 }

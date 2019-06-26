@@ -43,6 +43,8 @@ struct Opts {
     log_level: Option<log::LevelFilter>,
     #[structopt(flatten)]
     net_opts: NetOpts,
+    #[structopt(long = "name", default_value = "<noname>")]
+    name: String,
     #[structopt(subcommand)]
     command: Option<Command>,
 }
@@ -105,7 +107,7 @@ fn main() {
         }));
         let app = geng::LoadingScreen::new(&geng, geng::DefaultLoadingScreen::new(&geng), {
             let geng = geng.clone();
-            move |assets| ClientApp::new(&geng, opts.net_opts.clone(), assets)
+            move |assets| ClientApp::new(&geng, opts.name.clone(), opts.net_opts.clone(), assets)
         });
         geng::run(geng, app);
     }

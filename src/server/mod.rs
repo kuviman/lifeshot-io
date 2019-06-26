@@ -6,6 +6,7 @@ use model::*;
 
 struct Client {
     player_id: Id,
+    name: Option<String>,
     model: Arc<Mutex<Model>>,
     events: std::sync::mpsc::Receiver<common_model::Event>,
     sender: Box<net::Sender<ServerMessage>>,
@@ -14,14 +15,28 @@ struct Client {
 impl Drop for Client {
     fn drop(&mut self) {
         // TODO: remove the player
+        if let Some(name) = &self.name {
+            info!("{:?} disconnected", name);
+        }
     }
 }
 
 impl net::Receiver<ClientMessage> for Client {
     fn handle(&mut self, message: ClientMessage) {
-        let reply = match message {
+        let reply = match &message {
             ClientMessage::Action(_) => true,
-            _ => false,
+            ClientMessage::Spawn => false,
+            ClientMessage::SetName(name) => {
+                self.name = Some(name.clone());
+                info!("{:?} joined the game", name);
+                if let Ok(cmd) = std::env::var("NEW_PLAYER_CMD") {
+                    std::process::Command::new(cmd)
+                        .arg(name)
+                        .spawn()
+                        .expect("Failed to run NEW_PLAYER_CMD");
+                }
+                false
+            }
         };
         let mut model = self.model.lock().unwrap();
         model.handle(self.player_id, message);
@@ -42,11 +57,6 @@ impl net::server::App for ServerApp {
     type ServerMessage = ServerMessage;
     type ClientMessage = ClientMessage;
     fn connect(&mut self, mut sender: Box<net::Sender<ServerMessage>>) -> Client {
-        if let Ok(cmd) = std::env::var("NEW_PLAYER_CMD") {
-            std::process::Command::new(cmd)
-                .spawn()
-                .expect("Failed to run NEW_PLAYER_CMD");
-        }
         let (player_id, events) = {
             let mut model = self.model.lock().unwrap();
             let player_id = model.new_player();
@@ -59,6 +69,7 @@ impl net::server::App for ServerApp {
         };
         Client {
             model: self.model.clone(),
+            name: None,
             player_id,
             sender,
             events,
