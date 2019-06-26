@@ -22,35 +22,6 @@
             list-style-type: disc;
             margin-top: 0.5em;
         }
-
-        #geng-canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        #error-screen {
-            width: 100%;
-            height: 100%;
-            background-color: black;
-        }
-
-        #error-screen .error-container {
-            width: 80%;
-            padding: 2em;
-            border-radius: 2em;
-            border: 2px solid darkred;
-            box-shadow: 0 0 2em red;
-            color: white;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            -webkit-transform: translate(-50%, -50%);
-            -moz-transform: translate(-50%, -50%);
-            -ms-transform: translate(-50%, -50%);
-            -o-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
     </style>
 </head>
 
@@ -221,15 +192,30 @@
             </svg></a></div>
     <!-- GitLab corner END -->
 
-    <div id="error-screen" style="display: none;">
-        <div class="error-container">
-            <h1>Whoops...</h1>
-            <pre id="error-message">Something went wrong</pre>
-        </div>
-    </div>
-    <canvas id="geng-canvas"></canvas>
+    <div id="login-screen">
+        <h1>lifeshot.io</h1>
+        <p>This is a work in progress</p>
+        <p style="margin-bottom: 2em;">You can report bugs and suggest features on the issue tracker</p>
 
-    <script src="lifeshot-io.js"></script>
+        <label for="name">Enter you name:</label>
+        <br />
+        <input id="name" type="text" />
+        <br />
+        <button onclick="play()">Play</button>
+    </div>
+
+    <script>
+        function play() {
+            var name = document.getElementById("name").value;
+            var screen = document.getElementById("login-screen");
+            screen.remove();
+            var iframe = document.createElement("iframe");
+            iframe.setAttribute("src", "player.html?name=" + encodeURI(name));
+            iframe.style.width = "100%";
+            iframe.style.height = "100%";
+            document.body.appendChild(iframe);
+        }
+    </script>
 </body>
 
 </html>
