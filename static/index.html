@@ -211,6 +211,7 @@
             screen.remove();
             var iframe = document.createElement("iframe");
             iframe.setAttribute("src", "player.html?name=" + encodeURI(name));
+            iframe.setAttribute("allowfullscreen", "true");
             iframe.style.width = "100%";
             iframe.style.height = "100%";
             document.body.appendChild(iframe);
