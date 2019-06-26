@@ -3,10 +3,12 @@ use crate::*;
 mod background;
 mod circle_renderer;
 mod model;
+mod texture_renderer;
 
 use background::Background;
 use circle_renderer::CircleRenderer;
 use model::*;
+use texture_renderer::TextureRenderer;
 
 #[derive(geng::Assets)]
 pub struct Assets {
@@ -220,10 +222,12 @@ struct ClientPlayApp {
     assets: Rc<Assets>,
     client_player_id: Option<Id>,
     circle_renderer: CircleRenderer,
+    texture_renderer: TextureRenderer,
     background: Option<Background>,
     action: Action,
     camera_pos: Vec2<f32>,
     model: Model,
+    player_names: HashMap<Id, (String, ugli::Texture)>,
     mouse_pos: Vec2<f32>,
     connection: net::client::Connection<ServerMessage, ClientMessage>,
     traffic_watch: TrafficWatch,
@@ -252,9 +256,11 @@ impl ClientPlayApp {
             background: None,
             client_player_id: None,
             circle_renderer: CircleRenderer::new(geng),
+            texture_renderer: TextureRenderer::new(geng),
             action,
             camera_pos: vec2(0.0, 0.0),
             model: Model::new(&assets, &sound_player),
+            player_names: HashMap::new(),
             connection,
             traffic_watch: TrafficWatch::new(),
             ping_watch: PingWatch::new(),
@@ -275,6 +281,34 @@ impl geng::App for ClientPlayApp {
             for message in self.connection.new_messages() {
                 got = true;
                 self.client_player_id = Some(message.client_player_id);
+                for event in &message.events {
+                    if let common_model::Event::PlayerName { player_id, name } = event {
+                        let height = 32usize;
+                        let width = self.font.measure(name, height as f32).width().ceil() as usize;
+                        let mut texture =
+                            ugli::Texture::new_uninitialized(self.geng.ugli(), vec2(width, height));
+                        {
+                            let mut framebuffer = ugli::Framebuffer::new_color(
+                                self.geng.ugli(),
+                                ugli::ColorAttachment::Texture(&mut texture),
+                            );
+                            ugli::clear(
+                                &mut framebuffer,
+                                Some(Color::rgba(1.0, 1.0, 1.0, 0.0)),
+                                None,
+                            );
+                            self.font.draw(
+                                &mut framebuffer,
+                                name,
+                                vec2(0.0, 0.0),
+                                height as f32,
+                                Color::rgba(1.0, 1.0, 1.0, 0.7),
+                            );
+                        }
+                        self.player_names
+                            .insert(*player_id, (name.clone(), texture));
+                    }
+                }
                 self.model.recv(message);
                 if self.background.is_none() {
                     self.background = Some(Background::new(&self.model.rules));
@@ -408,6 +442,16 @@ impl geng::App for ClientPlayApp {
         }
 
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
+
+        for player in self.model.players.values() {
+            if Some(player.id) == self.client_player_id {
+                continue;
+            }
+            if let Some((_, texture)) = self.player_names.get(&player.id) {
+                self.texture_renderer
+                    .draw(framebuffer, view_matrix, player.pos, texture, rules);
+            }
+        }
 
         let font = &self.font;
         let scale = framebuffer_size.y / 20.0;
