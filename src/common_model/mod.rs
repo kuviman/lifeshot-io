@@ -298,6 +298,7 @@ pub struct Model {
     pub projectiles: HashMap<Id, Projectile>,
     pub food: Vec<Food>,
     pub events: Events<Event>,
+    player_names: HashMap<Id, String>,
 }
 
 impl Model {
@@ -413,6 +414,7 @@ impl Model {
                 }
             }
             ClientMessage::SetName(name) => {
+                self.player_names.insert(player_id, name.clone());
                 self.events.fire(Event::PlayerName { player_id, name });
             }
         }
@@ -428,6 +430,7 @@ impl Default for Model {
             projectiles: HashMap::new(),
             food: Vec::new(),
             events: Events::new(),
+            player_names: HashMap::new(),
         }
     }
 }
@@ -453,6 +456,12 @@ impl Model {
         let mut result = Vec::new();
         for food in &self.food {
             result.push(Event::Food(FoodEvent::Add(food.clone())));
+        }
+        for (id, name) in &self.player_names {
+            result.push(Event::PlayerName {
+                player_id: *id,
+                name: name.clone(),
+            });
         }
         result
     }
