@@ -444,9 +444,6 @@ impl geng::App for ClientPlayApp {
         self.circle_renderer.draw(framebuffer, view_matrix, rules);
 
         for player in self.model.players.values() {
-            if Some(player.id) == self.client_player_id {
-                continue;
-            }
             if let Some((_, texture)) = self.player_names.get(&player.id) {
                 self.texture_renderer
                     .draw(framebuffer, view_matrix, player.pos, texture, rules);
