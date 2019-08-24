@@ -9,7 +9,7 @@ struct Client {
     name: Option<String>,
     model: Arc<Mutex<Model>>,
     events: std::sync::mpsc::Receiver<common_model::Event>,
-    sender: Box<net::Sender<ServerMessage>>,
+    sender: Box<dyn net::Sender<ServerMessage>>,
 }
 
 impl Drop for Client {
@@ -56,7 +56,7 @@ impl net::server::App for ServerApp {
     type Client = Client;
     type ServerMessage = ServerMessage;
     type ClientMessage = ClientMessage;
-    fn connect(&mut self, mut sender: Box<net::Sender<ServerMessage>>) -> Client {
+    fn connect(&mut self, mut sender: Box<dyn net::Sender<ServerMessage>>) -> Client {
         let (player_id, events) = {
             let mut model = self.model.lock().unwrap();
             let player_id = model.new_player();

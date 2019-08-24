@@ -26,7 +26,9 @@ pub struct Assets {
     music: geng::Sound,
 }
 enum ClientAppState {
-    Connecting(Box<Promise<Output = net::client::Connection<ServerMessage, ClientMessage>>>),
+    Connecting(
+        Pin<Box<dyn Future<Output = net::client::Connection<ServerMessage, ClientMessage>>>>,
+    ),
     Playing(ClientPlayApp),
 }
 
@@ -41,22 +43,25 @@ impl ClientApp {
         Self {
             geng: geng.clone(),
             assets: Some(assets),
-            state: Some(ClientAppState::Connecting(Box::new(
-                net::client::connect(&net_opts.addr).map(|mut connection| {
-                    connection.send(ClientMessage::SetName(name));
-                    connection
-                }),
-            ))),
+            state: Some(ClientAppState::Connecting(
+                net::client::connect(&net_opts.addr)
+                    .map(|mut connection| {
+                        connection.send(ClientMessage::SetName(name));
+                        connection
+                    })
+                    .boxed_local(),
+            )),
         }
     }
 }
 
-impl geng::App for ClientApp {
+impl geng::State for ClientApp {
     fn update(&mut self, delta_time: f64) {
         match self.state.as_mut().unwrap() {
-            ClientAppState::Connecting(promise) => {
-                if promise.ready() {
-                    let connection = promise.unwrap();
+            ClientAppState::Connecting(future) => {
+                if let std::task::Poll::Ready(connection) = future.as_mut().poll(
+                    &mut std::task::Context::from_waker(futures::task::noop_waker_ref()),
+                ) {
                     self.state
                         .replace(ClientAppState::Playing(ClientPlayApp::new(
                             &self.geng,
@@ -272,7 +277,7 @@ impl ClientPlayApp {
     }
 }
 
-impl geng::App for ClientPlayApp {
+impl geng::State for ClientPlayApp {
     fn update(&mut self, delta_time: f64) {
         self.traffic_watch.update(self.connection.traffic());
         self.sound_player.inner.pos.set(self.camera_pos);

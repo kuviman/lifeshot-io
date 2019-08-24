@@ -5,7 +5,7 @@ authors = ["kuviman <kuviman@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-geng = { path = "geng" }
+geng = { git = "https://gitlab.com/kuviman/geng" }
 serde = "*"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
