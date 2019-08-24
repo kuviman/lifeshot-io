@@ -15,6 +15,8 @@ cache:
 before_script:
   - mkdir -p .cache
   - mkdir -p artifacts
+  - source /opt/scripts/setup-git.sh
+  - source /opt/scripts/setup-ssh.sh
 
 build:
   stage: build
@@ -42,7 +44,6 @@ deploy-server:
     - build
   image: registry.gitlab.com/kuviman/dock.rs
   script:
-    - source /opt/scripts/setup-ssh.sh
     - ssh lifeshot@server.lifeshot.io systemctl --user stop lifeshot-server
     - scp artifacts/lifeshot-io lifeshot@server.lifeshot.io:/home/lifeshot/
     - ssh lifeshot@server.lifeshot.io systemctl --user start lifeshot-server
