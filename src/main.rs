@@ -105,10 +105,22 @@ fn main() {
             title: "LifeShot.io".to_owned(),
             ..default()
         }));
-        let app = geng::LoadingScreen::new(&geng, geng::DefaultLoadingScreen::new(&geng), {
-            let geng = geng.clone();
-            move |assets| ClientApp::new(&geng, opts.name.clone(), opts.net_opts.clone(), assets)
-        });
+        let app = geng::LoadingScreen::new(
+            &geng,
+            geng::DefaultLoadingScreen::new(&geng),
+            geng::AssetManager::load(geng.default_asset_manager(), "."),
+            {
+                let geng = geng.clone();
+                move |assets| {
+                    ClientApp::new(
+                        &geng,
+                        opts.name.clone(),
+                        opts.net_opts.clone(),
+                        assets.unwrap(),
+                    )
+                }
+            },
+        );
         geng::run(geng, app);
     }
 
