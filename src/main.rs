@@ -107,7 +107,7 @@ fn main() {
         }));
         let app = geng::LoadingScreen::new(
             &geng,
-            geng::DefaultLoadingScreen::new(&geng),
+            geng::EmptyLoadingScreen,
             geng::AssetManager::load(geng.default_asset_manager(), "."),
             {
                 let geng = geng.clone();
