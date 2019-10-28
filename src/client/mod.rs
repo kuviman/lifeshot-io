@@ -12,17 +12,17 @@ use texture_renderer::TextureRenderer;
 
 #[derive(geng::Assets)]
 pub struct Assets {
-    #[path = "aim.wav"]
+    #[asset(path = "aim.wav")]
     aim_sound: geng::Sound,
-    #[path = "death.wav"]
+    #[asset(path = "death.wav")]
     death_sound: geng::Sound,
-    #[path = "heal.wav"]
+    #[asset(path = "heal.wav")]
     heal_sound: geng::Sound,
-    #[path = "hit.wav"]
+    #[asset(path = "hit.wav")]
     hit_sound: geng::Sound,
-    #[path = "shoot.wav"]
+    #[asset(path = "shoot.wav")]
     shoot_sound: geng::Sound,
-    #[path = "music.ogg"]
+    #[asset(path = "music.ogg")]
     music: geng::Sound,
 }
 enum ClientAppState {
