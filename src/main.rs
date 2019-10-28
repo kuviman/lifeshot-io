@@ -108,7 +108,7 @@ fn main() {
         let app = geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
-            geng::AssetManager::load(geng.default_asset_manager(), "."),
+            geng::LoadAsset::load(&geng, "."),
             {
                 let geng = geng.clone();
                 move |assets| {
