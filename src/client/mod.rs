@@ -206,8 +206,8 @@ impl PingWatch {
     }
     fn update(&mut self) {
         let ping = self.ping_timer.tick();
-        self.min = min(self.min, ping);
-        self.max = max(self.max, ping);
+        self.min = partial_min(self.min, ping);
+        self.max = partial_max(self.max, ping);
         if self.timer.elapsed() > 1.0 {
             self.text = format!(
                 "ping: {}-{}ms",

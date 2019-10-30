@@ -32,7 +32,7 @@ impl Entity {
             return;
         }
         let penetration = (a.size + b.size) - dist;
-        let penetration = penetration.min(min(a.size, b.size));
+        let penetration = penetration.min(partial_min(a.size, b.size));
         let n = rules.normalize_delta(b.pos - a.pos).normalize();
         if penetration > 0.0 {
             let ka = 1.0 / a.mass();
@@ -47,7 +47,7 @@ impl Entity {
     pub fn hit(&mut self, target: &mut Self, k: f32, rules: &Rules) -> bool {
         let penetration =
             (self.size + target.size) - rules.normalize_delta(self.pos - target.pos).len();
-        let penetration = penetration.min(min(self.size, target.size));
+        let penetration = penetration.min(partial_min(self.size, target.size));
         if penetration > 0.0 {
             let prev_mass = self.mass();
             self.size = (self.size - penetration).max(0.0);
