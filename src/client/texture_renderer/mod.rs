@@ -45,7 +45,7 @@ impl TextureRenderer {
         rules: &Rules,
     ) {
         let size = {
-            let size = texture.get_size().map(|x| x as f32);
+            let size = texture.size().map(|x| x as f32);
             let height = 0.5;
             vec2(size.x * height / size.y, height)
         };

@@ -364,7 +364,7 @@ impl geng::State for ClientPlayApp {
         let player_alive = player_alive;
 
         ugli::clear(framebuffer, Some(Color::BLACK), None);
-        let framebuffer_size = framebuffer.get_size().map(|x| x as f32);
+        let framebuffer_size = framebuffer.size().map(|x| x as f32);
         let center = framebuffer_size / 2.0;
         let scale = framebuffer_size.y / Self::CAMERA_FOV;
 
