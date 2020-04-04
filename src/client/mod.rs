@@ -270,8 +270,11 @@ impl ClientPlayApp {
             traffic_watch: TrafficWatch::new(),
             ping_watch: PingWatch::new(),
             mouse_pos: vec2(0.0, 0.0),
-            font: geng::Font::new(geng, include_bytes!("Simply Rounded Bold.ttf").to_vec())
-                .unwrap(),
+            font: geng::Font::new(
+                geng,
+                include_bytes!("../../static/Simply Rounded Bold.ttf").to_vec(),
+            )
+            .unwrap(),
             music: None,
         }
     }
@@ -466,14 +469,14 @@ impl geng::State for ClientPlayApp {
 
         {
             const FONT_SIZE: f32 = 16.0;
-            let mut y = framebuffer_size.y - 10.0;
+            let mut y = framebuffer_size.y - 100.0;
             for (id, scores) in &self.model.scores {
                 if let Some((name, _)) = self.player_names.get(id) {
                     y -= FONT_SIZE;
                     font.draw_aligned(
                         framebuffer,
                         &format!("{}: {} kills, {} deaths", name, scores.kills, scores.deaths),
-                        vec2(framebuffer_size.x - 10.0, y),
+                        vec2(framebuffer_size.x - 100.0, y),
                         1.0,
                         FONT_SIZE,
                         Color::rgba(1.0, 1.0, 1.0, 0.6),
