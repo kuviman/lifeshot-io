@@ -6,6 +6,9 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   CARGO_HOME: $CI_PROJECT_DIR/.cache/.cargo
   CARGO_TARGET_DIR: $CI_PROJECT_DIR/.cache/.cargo-target
+  LIFESHOT_HOST: 0.0.0.0
+  LIFESHOT_PORT: 1154
+  LIFESHOT_ADDR: wss://server.lifeshot.io
 
 cache:
   key: "$CI_COMMIT_REF_SLUG-$CI_JOB_NAME"

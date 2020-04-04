@@ -8,16 +8,10 @@ You can play the game on [lifeshot.io](https://lifeshot.io)
 
 ## Build
 
-To build from source and run, install [Rust](https://rust-lang.org), then:
+Install [Rust](https://rust-lang.org), then, run local server and connect to it with:
 
 ```shell
-$ cargo run --release -- --addr ws://server.lifeshot.io:1154
-```
-
-To run with local server:
-
-```shell
-$ cargo run --release -- --host 127.0.0.1 --port 1154 --addr ws://127.0.0.1:1154 with-server
+$ cargo run --release -- with-server
 ```
 
 To build web version, `cargo-web` is needed:
@@ -25,4 +19,10 @@ To build web version, `cargo-web` is needed:
 ```shell
 $ cargo install cargo-web
 $ cargo web start --release --open
+```
+
+Web version can not start server, to it will be needed to be started separately:
+
+```shell
+$ cargo run --release -- server-only
 ```
