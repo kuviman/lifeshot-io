@@ -288,6 +288,11 @@ impl geng::State for ClientPlayApp {
                 self.client_player_id = Some(message.client_player_id);
                 for event in &message.events {
                     if let common_model::Event::PlayerName { player_id, name } = event {
+                        let name = if name.is_empty() {
+                            "<noname>"
+                        } else {
+                            name.as_str()
+                        };
                         let height = 32usize;
                         let width = self.font.measure(name, height as f32).width().ceil() as usize;
                         let mut texture =
@@ -311,7 +316,7 @@ impl geng::State for ClientPlayApp {
                             );
                         }
                         self.player_names
-                            .insert(*player_id, (name.clone(), texture));
+                            .insert(*player_id, (name.to_owned(), texture));
                     }
                 }
                 self.model.recv(message);
