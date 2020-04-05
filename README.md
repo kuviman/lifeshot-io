@@ -1,6 +1,4 @@
-# LifeShot IO
-
-*This is a work in progress*
+# lifeshot.io<sup>WIP</sup>
 
 ## Play
 
