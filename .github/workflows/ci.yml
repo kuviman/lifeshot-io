@@ -139,7 +139,7 @@ jobs:
           publish_dir: ./web
 
       - name: Copy server files
-        uses: appleboy/scp-action
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER }}
           username: ${{ secrets.SSH_USERNAME }}
@@ -148,10 +148,9 @@ jobs:
           target: .
 
       - name: Deploy server
-        uses: appleboy/ssh-action
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          script: |
-            systemctl --user restart lifeshot-server
+          script: systemctl --user restart lifeshot-server
