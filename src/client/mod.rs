@@ -96,6 +96,7 @@ impl geng::State for ClientApp {
 struct SoundPlayerImpl {
     rules: Rules,
     pos: Cell<Vec2<f32>>,
+    volume: Cell<f64>,
 }
 
 pub struct SoundPlayer {
@@ -122,8 +123,8 @@ impl DerefMut for SoundEffect {
 
 impl SoundEffect {
     fn set_pos(&mut self, pos: Vec2<f32>) {
-        self.inner.set_volume(f64::from(
-            clamp(
+        self.inner.set_volume(
+            f64::from(clamp(
                 1.0 - (self
                     .player
                     .rules
@@ -132,8 +133,8 @@ impl SoundEffect {
                     / ClientPlayApp::CAMERA_FOV)
                     .powf(2.0),
                 0.0..=1.0,
-            ) * 0.2,
-        ));
+            )) * self.player.volume.get(),
+        );
     }
 }
 
@@ -143,6 +144,7 @@ impl SoundPlayer {
             inner: Rc::new(SoundPlayerImpl {
                 pos: Cell::new(vec2(0.0, 0.0)),
                 rules: default(), // TODO
+                volume: Cell::new(0.5),
             }),
         }
     }
@@ -239,6 +241,61 @@ struct ClientPlayApp {
     ping_watch: PingWatch,
     font: geng::Font,
     music: Option<geng::SoundEffect>,
+    ui_state: UiState,
+    ui_controller: geng::ui::Controller,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Settings {
+    volume: f64,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self { volume: 0.5 }
+    }
+}
+
+struct UiState {
+    geng: Rc<Geng>,
+    settings: AutoSave<Settings>,
+    volume_slider: geng::ui::Slider,
+}
+
+impl UiState {
+    fn new(geng: &Rc<Geng>) -> Self {
+        let ui_theme = Rc::new(geng::ui::Theme::default(geng));
+        Self {
+            geng: geng.clone(),
+            settings: AutoSave::load("settings"),
+            volume_slider: geng::ui::Slider::new(geng, &ui_theme),
+        }
+    }
+    fn volume(&self) -> f64 {
+        return self.settings.volume * 0.2;
+    }
+    fn ui<'a>(&'a mut self) -> impl geng::ui::Widget + 'a {
+        use geng::ui;
+        use geng::ui::*;
+        let settings = &mut self.settings;
+        let current_volume = settings.volume;
+        ui::row![
+            geng::ui::text("volume", self.geng.default_font(), 24.0, Color::WHITE)
+                .padding_right(24.0),
+            self.volume_slider
+                .ui(
+                    current_volume,
+                    0.0..=1.0,
+                    Box::new(move |new_value| {
+                        settings.volume = new_value;
+                    })
+                )
+                .fixed_size(vec2(100.0, 24.0)),
+        ]
+        .padding_bottom(24.0)
+        .padding_right(24.0)
+        .align(vec2(1.0, 0.0))
+    }
 }
 
 impl ClientPlayApp {
@@ -276,12 +333,19 @@ impl ClientPlayApp {
             )
             .unwrap(),
             music: None,
+            ui_state: UiState::new(geng),
+            ui_controller: geng::ui::Controller::new(),
         }
     }
 }
 
 impl geng::State for ClientPlayApp {
     fn update(&mut self, delta_time: f64) {
+        self.ui_controller.update(self.ui_state.ui(), delta_time);
+        self.sound_player.inner.volume.set(self.ui_state.volume());
+        if let Some(music) = &mut self.music {
+            music.set_volume(self.ui_state.volume());
+        }
         self.traffic_watch.update(self.connection.traffic());
         self.sound_player.inner.pos.set(self.camera_pos);
         {
@@ -527,8 +591,16 @@ impl geng::State for ClientPlayApp {
             16.0,
             Color::rgb(0.5, 0.5, 0.5),
         );
+
+        self.ui_controller.draw(self.ui_state.ui(), framebuffer);
     }
     fn handle_event(&mut self, event: geng::Event) {
+        if self
+            .ui_controller
+            .handle_event(self.ui_state.ui(), event.clone())
+        {
+            return;
+        }
         match event {
             geng::Event::KeyDown { key } => match key {
                 geng::Key::R => {
