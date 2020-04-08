@@ -309,11 +309,39 @@ pub struct Model {
     pub events: Events<Event>,
     scores: HashMap<Id, Scores>,
     player_names: HashMap<Id, String>,
+    bots: Vec<Id>,
 }
 
 impl Model {
     pub const TICKS_PER_SECOND: f64 = 60.0;
     pub const MAX_FOOD_EXTRA: f32 = 10.0;
+
+    fn add_bot(&mut self) {
+        let id = self.new_player();
+        self.set_player_name(id, format!("Bot#{}", id.0));
+        self.bots.push(id);
+    }
+
+    fn spawn(&mut self, id: Id) {
+        self.players.insert(
+            id,
+            Player::new(
+                id,
+                vec2(
+                    global_rng().gen_range(0.0, self.rules.world_size),
+                    global_rng().gen_range(0.0, self.rules.world_size),
+                ),
+            ),
+        );
+    }
+
+    fn set_player_name(&mut self, id: Id, name: String) {
+        self.player_names.insert(id, name.clone());
+        self.events.fire(Event::PlayerName {
+            player_id: id,
+            name,
+        });
+    }
 
     pub fn new_player(&mut self) -> Id {
         let id = Id::new();
@@ -330,6 +358,7 @@ impl Model {
     pub fn disconnect(&mut self, id: Id) {
         self.scores.remove(&id);
         self.players.remove(&id);
+        self.player_names.remove(&id);
         self.scores_updated();
     }
     fn scores_updated(&mut self) {
@@ -438,6 +467,18 @@ impl Model {
         if scores_updated {
             self.scores_updated();
         }
+
+        let player_count = self.scores.len() - self.bots.len();
+        if player_count <= 1 {
+            for i in 0..self.bots.len() {
+                let id = self.bots[i];
+                if !self.players.contains_key(&id) {
+                    self.spawn(id);
+                }
+                let action = self.think_bot(id);
+                self.players.get_mut(&id).unwrap().action = action;
+            }
+        }
     }
     pub fn handle(&mut self, player_id: Id, message: ClientMessage) {
         match message {
@@ -448,29 +489,65 @@ impl Model {
             }
             ClientMessage::Spawn => {
                 if !self.players.contains_key(&player_id) {
-                    self.players.insert(
-                        player_id,
-                        Player::new(
-                            player_id,
-                            vec2(
-                                global_rng().gen_range(0.0, self.rules.world_size),
-                                global_rng().gen_range(0.0, self.rules.world_size),
-                            ),
-                        ),
-                    );
+                    self.spawn(player_id);
                 }
             }
             ClientMessage::SetName(name) => {
-                self.player_names.insert(player_id, name.clone());
-                self.events.fire(Event::PlayerName { player_id, name });
+                self.set_player_name(player_id, name);
             }
+        }
+    }
+    fn think_bot(&self, id: Id) -> Action {
+        let me: &Player = self
+            .players
+            .values()
+            .find(|player| player.id == id)
+            .unwrap();
+        let closest_food = self.food.iter().min_by(|a, b| {
+            self.rules
+                .normalize_delta(a.pos - me.pos)
+                .len()
+                .partial_cmp(&self.rules.normalize_delta(b.pos - me.pos).len())
+                .unwrap()
+        });
+        let closest_enemy = self
+            .players
+            .values()
+            .filter(|player| player.id != me.id)
+            .min_by(|a, b| {
+                self.rules
+                    .normalize_delta(a.pos - me.pos)
+                    .len()
+                    .partial_cmp(&self.rules.normalize_delta(b.pos - me.pos).len())
+                    .unwrap()
+            });
+        let mut shoot = None;
+        if let Some(e) = closest_enemy {
+            if self.rules.normalize_delta(e.pos - me.pos).len() < 17.0 {
+                shoot = Some(e.pos);
+            }
+        }
+        if me.size < 0.7 {
+            shoot = None;
+        }
+        if let Some(p) = &me.projectile {
+            if p.size > 0.4 {
+                shoot = None;
+            }
+        }
+        Action {
+            target_vel: closest_food.map(|f| f.pos).unwrap_or(vec2(0.0, 0.0)) - me.pos,
+            shoot: shoot.is_some(),
+            aim: shoot
+                .or(me.projectile.as_ref().map(|p| p.pos))
+                .unwrap_or(vec2(0.0, 0.0)),
         }
     }
 }
 
 impl Default for Model {
     fn default() -> Self {
-        Self {
+        let mut result = Self {
             rules: default(),
             current_time: 0.0,
             players: HashMap::new(),
@@ -479,7 +556,12 @@ impl Default for Model {
             events: Events::new(),
             player_names: HashMap::new(),
             scores: HashMap::new(),
+            bots: Vec::new(),
+        };
+        for _ in 0..5 {
+            result.add_bot();
         }
+        result
     }
 }
 
