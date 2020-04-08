@@ -469,12 +469,12 @@ impl Model {
         }
 
         let player_count = self.scores.len() - self.bots.len();
-        if player_count <= 1 {
-            for i in 0..self.bots.len() {
-                let id = self.bots[i];
-                if !self.players.contains_key(&id) {
-                    self.spawn(id);
-                }
+        for i in 0..self.bots.len() {
+            let id = self.bots[i];
+            if player_count <= 1 && !self.players.contains_key(&id) {
+                self.spawn(id);
+            }
+            if self.players.contains_key(&id) {
                 let action = self.think_bot(id);
                 self.players.get_mut(&id).unwrap().action = action;
             }
