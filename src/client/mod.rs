@@ -51,7 +51,7 @@ pub struct ClientApp {
 impl ClientApp {
     pub fn run(opts: &Opts, net_opts: &NetOpts) {
         let geng = Rc::new(Geng::new(geng::ContextOptions {
-            title: "LifeShot.io".to_owned(),
+            title: "lifeshot.io".to_owned(),
             ..default()
         }));
         let name = opts.name.clone();
