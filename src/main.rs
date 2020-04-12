@@ -62,16 +62,16 @@ pub struct NetOpts {
     extra_delay: Option<u64>,
 }
 
-#[derive(StructOpt, Debug)]
-enum Command {
+#[derive(StructOpt, Debug, Clone)]
+pub enum Command {
     #[structopt(name = "server-only")]
     ServerOnly,
     #[structopt(name = "with-server")]
     WithServer,
 }
 
-#[derive(StructOpt, Debug)]
-struct Opts {
+#[derive(StructOpt, Debug, Clone)]
+pub struct Opts {
     #[structopt(long = "log-level")]
     log_level: Option<log::LevelFilter>,
     #[structopt(flatten)]
@@ -136,22 +136,7 @@ fn main() {
     };
 
     if client {
-        let geng = Rc::new(Geng::new(geng::ContextOptions {
-            title: "LifeShot.io".to_owned(),
-            ..default()
-        }));
-        let app = geng::LoadingScreen::new(
-            &geng,
-            geng::EmptyLoadingScreen,
-            geng::LoadAsset::load(&geng, "."),
-            {
-                let geng = geng.clone();
-                move |assets| {
-                    ClientApp::new(&geng, opts.name.clone(), net_opts.clone(), assets.unwrap())
-                }
-            },
-        );
-        geng::run(geng, app);
+        ClientApp::run(&opts, &net_opts);
     }
 
     #[cfg(not(target_arch = "wasm32"))]

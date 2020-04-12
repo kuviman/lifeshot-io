@@ -53,6 +53,27 @@ impl ClientApp {
             )),
         }
     }
+
+    pub fn run(opts: &Opts, net_opts: &NetOpts) {
+        let geng = Rc::new(Geng::new(geng::ContextOptions {
+            title: "LifeShot.io".to_owned(),
+            ..default()
+        }));
+        let opts = opts.clone();
+        let net_opts = net_opts.clone();
+        let app = geng::LoadingScreen::new(
+            &geng,
+            geng::EmptyLoadingScreen,
+            geng::LoadAsset::load(&geng, "."),
+            {
+                let geng = geng.clone();
+                move |assets| {
+                    ClientApp::new(&geng, opts.name.clone(), net_opts.clone(), assets.unwrap())
+                }
+            },
+        );
+        geng::run(geng, app);
+    }
 }
 
 impl geng::State for ClientApp {
