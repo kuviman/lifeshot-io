@@ -25,92 +25,51 @@ pub struct Assets {
     #[asset(path = "music.ogg")]
     music: geng::Sound,
 }
-enum ClientAppState {
-    Connecting(
-        Pin<Box<dyn Future<Output = net::client::Connection<ServerMessage, ClientMessage>>>>,
-    ),
-    Playing(ClientPlayApp),
-}
 
 pub struct ClientApp {
     geng: Rc<Geng>,
-    assets: Option<Assets>,
-    state: Option<ClientAppState>,
+    sound_player: Rc<SoundPlayer>,
+    assets: Rc<Assets>,
+    client_player_id: Option<Id>,
+    circle_renderer: CircleRenderer,
+    texture_renderer: TextureRenderer,
+    background: Option<Background>,
+    action: Action,
+    camera_pos: Vec2<f32>,
+    model: Model,
+    player_names: HashMap<Id, (String, ugli::Texture)>,
+    mouse_pos: Vec2<f32>,
+    connection: net::client::Connection<ServerMessage, ClientMessage>,
+    traffic_watch: TrafficWatch,
+    ping_watch: PingWatch,
+    font: geng::Font,
+    music: Option<geng::SoundEffect>,
+    ui_state: UiState,
+    ui_controller: geng::ui::Controller,
 }
 
 impl ClientApp {
-    pub fn new(geng: &Rc<Geng>, name: String, net_opts: NetOpts, assets: Assets) -> Self {
-        Self {
-            geng: geng.clone(),
-            assets: Some(assets),
-            state: Some(ClientAppState::Connecting(
-                net::client::connect(&net_opts.addr)
-                    .map(|mut connection| {
-                        connection.send(ClientMessage::SetName(name));
-                        connection
-                    })
-                    .boxed_local(),
-            )),
-        }
-    }
-
     pub fn run(opts: &Opts, net_opts: &NetOpts) {
         let geng = Rc::new(Geng::new(geng::ContextOptions {
             title: "LifeShot.io".to_owned(),
             ..default()
         }));
-        let opts = opts.clone();
-        let net_opts = net_opts.clone();
+        let name = opts.name.clone();
+        let connection_future = net::client::connect(&net_opts.addr);
+        let assets_future = <Assets as geng::LoadAsset>::load(&geng, ".");
         let app = geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
-            geng::LoadAsset::load(&geng, "."),
+            future::join(assets_future, connection_future),
             {
                 let geng = geng.clone();
-                move |assets| {
-                    ClientApp::new(&geng, opts.name.clone(), net_opts.clone(), assets.unwrap())
+                move |(assets, mut connection)| {
+                    connection.send(ClientMessage::SetName(name));
+                    Self::new(&geng, connection, assets.unwrap())
                 }
             },
         );
         geng::run(geng, app);
-    }
-}
-
-impl geng::State for ClientApp {
-    fn update(&mut self, delta_time: f64) {
-        match self.state.as_mut().unwrap() {
-            ClientAppState::Connecting(future) => {
-                if let std::task::Poll::Ready(connection) = future.as_mut().poll(
-                    &mut std::task::Context::from_waker(futures::task::noop_waker_ref()),
-                ) {
-                    self.state
-                        .replace(ClientAppState::Playing(ClientPlayApp::new(
-                            &self.geng,
-                            connection,
-                            self.assets.take().unwrap(),
-                        )));
-                }
-            }
-            ClientAppState::Playing(app) => {
-                app.update(delta_time);
-            }
-        }
-    }
-    fn draw(&mut self, framebuffer: &mut ugli::Framebuffer) {
-        match self.state.as_mut().unwrap() {
-            ClientAppState::Connecting(_) => {}
-            ClientAppState::Playing(app) => {
-                app.draw(framebuffer);
-            }
-        }
-    }
-    fn handle_event(&mut self, event: geng::Event) {
-        match self.state.as_mut().unwrap() {
-            ClientAppState::Connecting(_) => {}
-            ClientAppState::Playing(app) => {
-                app.handle_event(event);
-            }
-        }
     }
 }
 
@@ -151,7 +110,7 @@ impl SoundEffect {
                     .rules
                     .normalize_delta(self.player.pos.get() - pos)
                     .len()
-                    / ClientPlayApp::CAMERA_FOV)
+                    / ClientApp::CAMERA_FOV)
                     .powf(2.0),
                 0.0..=1.0,
             )) * self.player.volume.get(),
@@ -244,28 +203,6 @@ impl PingWatch {
     }
 }
 
-struct ClientPlayApp {
-    geng: Rc<Geng>,
-    sound_player: Rc<SoundPlayer>,
-    assets: Rc<Assets>,
-    client_player_id: Option<Id>,
-    circle_renderer: CircleRenderer,
-    texture_renderer: TextureRenderer,
-    background: Option<Background>,
-    action: Action,
-    camera_pos: Vec2<f32>,
-    model: Model,
-    player_names: HashMap<Id, (String, ugli::Texture)>,
-    mouse_pos: Vec2<f32>,
-    connection: net::client::Connection<ServerMessage, ClientMessage>,
-    traffic_watch: TrafficWatch,
-    ping_watch: PingWatch,
-    font: geng::Font,
-    music: Option<geng::SoundEffect>,
-    ui_state: UiState,
-    ui_controller: geng::ui::Controller,
-}
-
 #[derive(Serialize, Deserialize)]
 struct Settings {
     volume: f64,
@@ -319,7 +256,7 @@ impl UiState {
     }
 }
 
-impl ClientPlayApp {
+impl ClientApp {
     const CAMERA_FOV: f32 = 30.0;
 
     pub fn new(
@@ -360,7 +297,7 @@ impl ClientPlayApp {
     }
 }
 
-impl geng::State for ClientPlayApp {
+impl geng::State for ClientApp {
     fn update(&mut self, delta_time: f64) {
         self.ui_controller.update(self.ui_state.ui(), delta_time);
         self.sound_player.inner.volume.set(self.ui_state.volume());
