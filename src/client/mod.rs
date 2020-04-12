@@ -267,7 +267,7 @@ impl UiState {
         let ui_theme = Rc::new(geng::ui::Theme::default(geng));
         Self {
             geng: geng.clone(),
-            settings: AutoSave::load("settings"),
+            settings: AutoSave::load(".settings"),
             volume_slider: geng::ui::Slider::new(geng, &ui_theme),
         }
     }
