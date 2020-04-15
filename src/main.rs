@@ -25,8 +25,6 @@ pub struct OptsNetOpts {
     port: Option<u16>,
     #[structopt(long = "addr")]
     addr: Option<String>,
-    #[structopt(long = "extra-delay")]
-    extra_delay: Option<u64>,
 }
 
 impl OptsNetOpts {
@@ -49,7 +47,6 @@ impl OptsNetOpts {
                 .or(option_env!("LIFESHOT_ADDR"))
                 .unwrap_or("ws://127.0.0.1:1154")
                 .to_owned(),
-            extra_delay: self.extra_delay,
         }
     }
 }
@@ -59,7 +56,6 @@ pub struct NetOpts {
     host: String,
     port: u16,
     addr: String,
-    extra_delay: Option<u64>,
 }
 
 #[derive(StructOpt, Debug, Clone)]
