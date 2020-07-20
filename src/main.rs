@@ -79,7 +79,7 @@ pub struct Opts {
 }
 
 fn main() {
-    #[cfg(not(any(target_arch = "asmjs", target_arch = "wasm32")))]
+    #[cfg(not(target_arch = "wasm32"))]
     {
         if let Ok(path) = std::env::var("CARGO_MANIFEST_DIR") {
             std::env::set_current_dir(std::path::Path::new(&path).join("static")).unwrap();
