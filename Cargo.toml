@@ -5,12 +5,11 @@ authors = ["kuviman <kuviman@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-geng = "0.3"
+geng = "0.4"
 serde = "1"
 structopt = "0.3"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-stdweb = "0.4"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ctrlc = "3"
