@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 pub mod prelude {
     pub use super::{Action, ClientMessage, Id, Rules, ServerMessage};

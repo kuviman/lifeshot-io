@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 
 pub struct Events<T: Clone> {
     senders: Arc<Mutex<Vec<std::sync::mpsc::Sender<T>>>>,
