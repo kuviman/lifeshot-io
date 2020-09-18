@@ -1,3 +1,4 @@
+#![recursion_limit = "1024"]
 #![allow(dead_code, unused_variables, unused_imports)]
 
 use geng::net;

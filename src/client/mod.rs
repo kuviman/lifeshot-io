@@ -56,7 +56,7 @@ impl ClientApp {
         }));
         let name = opts.name.clone();
         let connection_future = net::client::connect(&net_opts.addr);
-        let assets_future = <Assets as geng::LoadAsset>::load(&geng, ".");
+        let assets_future = <Assets as geng::LoadAsset>::load(geng.clone(), ".".to_owned());
         let app = geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
@@ -226,7 +226,7 @@ impl UiState {
         Self {
             geng: geng.clone(),
             settings: AutoSave::load(".settings"),
-            volume_slider: geng::ui::Slider::new(geng, &ui_theme),
+            volume_slider: geng::ui::Slider::new(&ui_theme),
         }
     }
     fn volume(&self) -> f64 {
@@ -238,7 +238,7 @@ impl UiState {
         let settings = &mut self.settings;
         let current_volume = settings.volume;
         ui::row![
-            geng::ui::text("volume", self.geng.default_font(), 24.0, Color::WHITE)
+            geng::ui::Text::new("volume", self.geng.default_font(), 24.0, Color::WHITE)
                 .padding_right(24.0),
             self.volume_slider
                 .ui(
