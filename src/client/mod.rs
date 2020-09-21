@@ -56,7 +56,7 @@ impl ClientApp {
         }));
         let name = opts.name.clone();
         let connection_future = net::client::connect(&net_opts.addr);
-        let assets_future = <Assets as geng::LoadAsset>::load(&geng, ".");
+        let assets_future = <Assets as geng::LoadAsset>::load(geng.clone(), ".".to_owned());
         let app = geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
@@ -226,7 +226,7 @@ impl UiState {
         Self {
             geng: geng.clone(),
             settings: AutoSave::load(".settings"),
-            volume_slider: geng::ui::Slider::new(geng, &ui_theme),
+            volume_slider: geng::ui::Slider::new(&ui_theme),
         }
     }
     fn volume(&self) -> f64 {
@@ -238,7 +238,7 @@ impl UiState {
         let settings = &mut self.settings;
         let current_volume = settings.volume;
         ui::row![
-            geng::ui::text("volume", self.geng.default_font(), 24.0, Color::WHITE)
+            geng::ui::Text::new("volume", self.geng.default_font(), 24.0, Color::WHITE)
                 .padding_right(24.0),
             self.volume_slider
                 .ui(
@@ -299,7 +299,8 @@ impl ClientApp {
 
 impl geng::State for ClientApp {
     fn update(&mut self, delta_time: f64) {
-        self.ui_controller.update(self.ui_state.ui(), delta_time);
+        self.ui_controller
+            .update(&mut self.ui_state.ui(), delta_time);
         self.sound_player.inner.volume.set(self.ui_state.volume());
         if let Some(music) = &mut self.music {
             music.set_volume(self.ui_state.volume());
@@ -550,12 +551,13 @@ impl geng::State for ClientApp {
             Color::rgb(0.5, 0.5, 0.5),
         );
 
-        self.ui_controller.draw(self.ui_state.ui(), framebuffer);
+        self.ui_controller
+            .draw(&mut self.ui_state.ui(), framebuffer);
     }
     fn handle_event(&mut self, event: geng::Event) {
         if self
             .ui_controller
-            .handle_event(self.ui_state.ui(), event.clone())
+            .handle_event(&mut self.ui_state.ui(), event.clone())
         {
             return;
         }
