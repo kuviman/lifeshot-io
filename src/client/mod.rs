@@ -299,7 +299,8 @@ impl ClientApp {
 
 impl geng::State for ClientApp {
     fn update(&mut self, delta_time: f64) {
-        self.ui_controller.update(self.ui_state.ui(), delta_time);
+        self.ui_controller
+            .update(&mut self.ui_state.ui(), delta_time);
         self.sound_player.inner.volume.set(self.ui_state.volume());
         if let Some(music) = &mut self.music {
             music.set_volume(self.ui_state.volume());
@@ -550,12 +551,13 @@ impl geng::State for ClientApp {
             Color::rgb(0.5, 0.5, 0.5),
         );
 
-        self.ui_controller.draw(self.ui_state.ui(), framebuffer);
+        self.ui_controller
+            .draw(&mut self.ui_state.ui(), framebuffer);
     }
     fn handle_event(&mut self, event: geng::Event) {
         if self
             .ui_controller
-            .handle_event(self.ui_state.ui(), event.clone())
+            .handle_event(&mut self.ui_state.ui(), event.clone())
         {
             return;
         }
