@@ -316,6 +316,8 @@ impl Model {
         self.sparks.retain(|e| e.alive());
     }
     pub fn recv(&mut self, mut message: ServerMessage) {
+        let old_world_size = self.rules.world_size;
+
         self.client_player_id = Some(message.client_player_id);
         self.rules = message.model.rules;
         let rules = &self.rules;
@@ -325,6 +327,10 @@ impl Model {
             0.0
         };
         self.last_sync_time = Some(message.model.current_time);
+
+        for food in self.food.values_mut() {
+            food.pos = food.pos / old_world_size * self.rules.world_size;
+        }
 
         let mut dead_players: HashSet<Id> = self.players.keys().cloned().collect();
         for player in self.players.values_mut() {

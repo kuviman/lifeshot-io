@@ -368,6 +368,21 @@ impl Model {
         self.update(1.0 / Self::TICKS_PER_SECOND as f32);
     }
     fn update(&mut self, delta_time: f32) {
+        let old_world_size = self.rules.world_size;
+        self.rules.world_size = (self.rules.world_size - delta_time * 0.5).max(50.0);
+        let players = self
+            .players
+            .values_mut()
+            .map(|player| -> &mut Entity { player });
+        let projectiles = self
+            .projectiles
+            .values_mut()
+            .map(|player| -> &mut Entity { player });
+        let foods = self.food.iter_mut().map(|food| -> &mut Entity { food });
+        for entity in players.chain(projectiles).chain(foods) {
+            entity.pos = entity.pos / old_world_size * self.rules.world_size;
+        }
+
         let rules = &self.rules;
         self.current_time += delta_time;
         for player in self.players.values_mut() {
