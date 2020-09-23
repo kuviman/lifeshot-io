@@ -77,6 +77,8 @@ pub struct Opts {
     name: String,
     #[structopt(subcommand)]
     command: Option<Command>,
+    #[structopt(name = "RULES")]
+    rules_filename: Option<String>,
 }
 
 fn main() {
@@ -102,7 +104,15 @@ fn main() {
     let server = None::<()>;
     #[cfg(not(target_arch = "wasm32"))]
     let (server, server_handle) = if opts.command.is_some() {
-        let server = Server::new(&net_opts);
+        let rules;
+        if let Some(filename) = &opts.rules_filename {
+            let content = std::fs::read_to_string(filename).unwrap();
+            rules = serde_json::from_str(&content).unwrap();
+        } else {
+            rules = default();
+        }
+
+        let server = Server::new(&net_opts, rules);
         let server_handle = server.handle();
         ctrlc::set_handler({
             let server_handle = server_handle.clone();

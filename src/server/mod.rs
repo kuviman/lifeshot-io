@@ -84,8 +84,8 @@ pub struct Server {
 
 impl Server {
     const TICKS_PER_SECOND: f64 = Model::TICKS_PER_SECOND;
-    pub fn new(net_opts: &NetOpts) -> Self {
-        let model = Arc::new(Mutex::new(default()));
+    pub fn new(net_opts: &NetOpts, rules: Rules) -> Self {
+        let model = Arc::new(Mutex::new(Model::new(rules)));
         Self {
             model: model.clone(),
             server: net::Server::new(

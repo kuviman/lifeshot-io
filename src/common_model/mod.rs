@@ -316,6 +316,10 @@ impl Model {
     pub const TICKS_PER_SECOND: f64 = 60.0;
     pub const MAX_FOOD_EXTRA: f32 = 10.0;
 
+    pub fn new(rules: Rules) -> Self {
+        Self { rules, ..default() }
+    }
+
     fn add_bot(&mut self) {
         let id = self.new_player();
         self.set_player_name(id, format!("Bot#{}", id.0));
