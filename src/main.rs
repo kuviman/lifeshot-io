@@ -20,11 +20,11 @@ use events::*;
 
 #[derive(StructOpt, Debug, Clone)]
 pub struct OptsNetOpts {
-    #[structopt(long = "host")]
+    #[structopt(long)]
     host: Option<String>,
-    #[structopt(long = "port")]
+    #[structopt(long)]
     port: Option<u16>,
-    #[structopt(long = "addr")]
+    #[structopt(long)]
     addr: Option<String>,
 }
 
@@ -69,14 +69,15 @@ pub enum Command {
 
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
-    #[structopt(long = "log-level")]
+    #[structopt(long)]
     log_level: Option<log::LevelFilter>,
     #[structopt(flatten)]
     net_opts: OptsNetOpts,
-    #[structopt(long = "name", default_value = "<noname>")]
+    #[structopt(long, default_value = "<noname>")]
     name: String,
     #[structopt(subcommand)]
     command: Option<Command>,
+    #[structopt(long)]
     rules: Option<String>,
 }
 
