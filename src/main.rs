@@ -77,8 +77,8 @@ pub struct Opts {
     name: String,
     #[structopt(subcommand)]
     command: Option<Command>,
-    #[structopt(name = "RULES")]
-    rules_filename: Option<String>,
+    #[structopt()]
+    rules: Option<String>,
 }
 
 fn main() {
@@ -105,7 +105,7 @@ fn main() {
     #[cfg(not(target_arch = "wasm32"))]
     let (server, server_handle) = if opts.command.is_some() {
         let rules;
-        if let Some(filename) = &opts.rules_filename {
+        if let Some(filename) = &opts.rules {
             let content = std::fs::read_to_string(filename).unwrap();
             rules = serde_json::from_str(&content).unwrap();
         } else {
