@@ -244,11 +244,15 @@ impl Projectile {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Rules {
     pub world_size: f32,
+    pub bots_count: usize,
 }
 
 impl Default for Rules {
     fn default() -> Self {
-        Self { world_size: 100.0 }
+        Self {
+            world_size: 100.0,
+            bots_count: 5,
+        }
     }
 }
 
@@ -317,7 +321,21 @@ impl Model {
     pub const MAX_FOOD_EXTRA: f32 = 10.0;
 
     pub fn new(rules: Rules) -> Self {
-        Self { rules, ..default() }
+        let mut result = Self {
+            rules,
+            current_time: 0.0,
+            players: HashMap::new(),
+            projectiles: HashMap::new(),
+            food: Vec::new(),
+            events: Events::new(),
+            player_names: HashMap::new(),
+            scores: HashMap::new(),
+            bots: Vec::new(),
+        };
+        for _ in 0..result.rules.bots_count {
+            result.add_bot();
+        }
+        result
     }
 
     fn add_bot(&mut self) {
@@ -551,21 +569,7 @@ impl Model {
 
 impl Default for Model {
     fn default() -> Self {
-        let mut result = Self {
-            rules: default(),
-            current_time: 0.0,
-            players: HashMap::new(),
-            projectiles: HashMap::new(),
-            food: Vec::new(),
-            events: Events::new(),
-            player_names: HashMap::new(),
-            scores: HashMap::new(),
-            bots: Vec::new(),
-        };
-        for _ in 0..5 {
-            result.add_bot();
-        }
-        result
+        Self::new(default())
     }
 }
 
