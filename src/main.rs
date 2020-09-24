@@ -77,7 +77,6 @@ pub struct Opts {
     name: String,
     #[structopt(subcommand)]
     command: Option<Command>,
-    #[structopt()]
     rules: Option<String>,
 }
 
