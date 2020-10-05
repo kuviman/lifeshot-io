@@ -56,7 +56,7 @@ impl ClientApp {
         }));
         let name = opts.name.clone();
         let connection_future = net::client::connect(&net_opts.addr);
-        let assets_future = <Assets as geng::LoadAsset>::load(geng.clone(), ".".to_owned());
+        let assets_future = <Assets as geng::LoadAsset>::load(&geng, ".");
         let app = geng::LoadingScreen::new(
             &geng,
             geng::EmptyLoadingScreen,
