@@ -69,6 +69,7 @@ jobs:
   web:
     name: Web build
     runs-on: ubuntu-latest
+    container: kuviman/geng
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -98,14 +99,8 @@ jobs:
           path: target
           key: web-cargo-build-target
 
-      - name: Install cargo-geng
-        run: cargo install cargo-geng --git https://github.com/kuviman/geng
-
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: geng
-          args: build --release
+        run: cargo geng build --release --target wasm32-unknown-unknown
         env:
           LIFESHOT_ADDR: wss://${{ secrets.SERVER }}
 
