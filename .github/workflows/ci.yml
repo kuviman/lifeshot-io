@@ -26,11 +26,18 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install libasound2-dev libgtk-3-dev
 
+      # NB: We install gnu-tar because BSD tar is buggy on Github's macos machines. https://github.com/actions/cache/issues/403
+      - name: Install GNU tar (Macos)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install gnu-tar
+          echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+
       - name: Cache cargo target dir
         uses: actions/cache@v1
         with:
           path: target
-          key: ${{ runner.os }}-cargo-build-target-1
+          key: ${{ runner.os }}-cargo-build-target-2
 
       - name: Build
         uses: actions-rs/cargo@v1
