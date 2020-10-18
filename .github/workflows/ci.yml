@@ -100,7 +100,7 @@ jobs:
           key: web-cargo-build-target-1
 
       - name: Build
-        run: cargo geng build --release --target wasm32-unknown-unknown
+        run: cargo geng build --release --target wasm32-unknown-unknown --index-file player.html
         env:
           LIFESHOT_ADDR: wss://${{ secrets.SERVER }}
 
