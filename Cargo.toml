@@ -9,7 +9,5 @@ geng = "0.6.0"
 serde = "1"
 structopt = "0.3"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 ctrlc = "3"
