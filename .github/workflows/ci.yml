@@ -98,15 +98,14 @@ jobs:
           path: target
           key: web-cargo-build-target
 
-      - name: Install cargo-web
-        run: bash install-cargo-web.sh
-        working-directory: .github/workflows
+      - name: Install cargo-geng
+        run: cargo install cargo-geng --git https://github.com/kuviman/geng
 
       - name: Build
         uses: actions-rs/cargo@v1
         with:
-          command: web
-          args: deploy --release
+          command: geng
+          args: build --release
         env:
           LIFESHOT_ADDR: wss://${{ secrets.SERVER }}
 
@@ -114,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: web-artifacts
-          path: ./target/deploy
+          path: ./target/geng
 
   deploy:
     name: Deploy
