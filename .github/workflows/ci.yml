@@ -30,19 +30,19 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry
+          key: ${{ runner.os }}-cargo-registry-1
 
       - name: Cache cargo index
         uses: actions/cache@v1
         with:
           path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index
+          key: ${{ runner.os }}-cargo-index-1
 
       - name: Cache cargo target dir
         uses: actions/cache@v1
         with:
           path: target
-          key: ${{ runner.os }}-cargo-build-target
+          key: ${{ runner.os }}-cargo-build-target-1
 
       - name: Build
         uses: actions-rs/cargo@v1
@@ -85,19 +85,19 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.cargo/registry
-          key: web-cargo-registry
+          key: web-cargo-registry-1
 
       - name: Cache cargo index
         uses: actions/cache@v1
         with:
           path: ~/.cargo/git
-          key: web-cargo-index
+          key: web-cargo-index-1
 
       - name: Cache cargo target dir
         uses: actions/cache@v1
         with:
           path: target
-          key: web-cargo-build-target
+          key: web-cargo-build-target-1
 
       - name: Build
         run: cargo geng build --release --target wasm32-unknown-unknown
