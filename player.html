@@ -9,7 +9,6 @@
         * {
             margin: 0;
             padding: 0;
-            text-align: center;
         }
 
         body {
@@ -23,13 +22,13 @@
             height: 100%;
         }
 
-        #error-screen {
+        #geng-error-screen {
             width: 100%;
             height: 100%;
             background-color: black;
         }
 
-        #error-screen .error-container {
+        #geng-error-screen .error-container {
             width: 80%;
             padding: 2em;
             border-radius: 2em;
@@ -50,14 +49,17 @@
 </head>
 
 <body>
-    <div id="error-screen" style="display: none;">
+    <div id="geng-error-screen" style="display: none;">
         <div class="error-container">
             <h1>Whoops...</h1>
             <pre id="error-message">Something went wrong</pre>
         </div>
     </div>
     <canvas id="geng-canvas"></canvas>
-    <script src="lifeshot-io.js"></script>
+    <script type="module">
+        import init from "./lifeshot-io.js";
+        init()
+    </script>
 </body>
 
 </html>
