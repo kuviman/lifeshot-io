@@ -123,8 +123,8 @@ jobs:
           host: ${{ secrets.SERVER }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: linux/lifeshot-io
-          target: .
+          source: linux
+          target: lifeshot-io
 
       - name: Deploy server
         uses: appleboy/ssh-action@master
