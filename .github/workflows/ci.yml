@@ -113,7 +113,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          cname: lifeshot.io
+          cname: lifeshot.io.kuviman.com
           publish_dir: ./web
 
       - name: Copy server files
