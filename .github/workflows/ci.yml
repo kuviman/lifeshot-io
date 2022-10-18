@@ -86,7 +86,7 @@ jobs:
       - name: Build
         run: cargo geng build --release --target wasm32-unknown-unknown --index-file player.html
         env:
-          LIFESHOT_ADDR: wss://${{ secrets.SERVER }}
+          LIFESHOT_ADDR: ${{ secrets.CONNECT }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
