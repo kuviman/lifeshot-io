@@ -2,7 +2,9 @@
 
 ## Play
 
-You can play the game on [lifeshot.io](https://lifeshot.io)
+You can play the game on <https://lifeshot.io.kuviman.com>
+
+![screenshot](screen.png)
 
 ## Build
 
